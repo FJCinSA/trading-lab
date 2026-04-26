@@ -948,16 +948,32 @@ function showCrosshair(x, y){
   const c = g.candles[idx];
   const box = document.getElementById('ohlc');
   const cls = c.c >= c.o ? 'up' : 'dn';
+
   // Volume formatted compactly
   const v = c.v;
   const vfmt = v >= 1e9 ? (v/1e9).toFixed(2) + 'B'
              : v >= 1e6 ? (v/1e6).toFixed(2) + 'M'
              : v >= 1e3 ? (v/1e3).toFixed(1) + 'K'
              : String(v);
+  // Volume vs average across the visible window — pos/neg % and spike flag
+  const _volSum = g.candles.reduce((s,cc)=>s+cc.v, 0);
+  const _volAvg = g.candles.length > 0 ? _volSum / g.candles.length : 0;
+  const _volPct = _volAvg > 0 ? ((c.v / _volAvg) - 1) * 100 : 0;
+  const _volPctStr = (_volPct >= 0 ? '+' : '') + _volPct.toFixed(0) + '%';
+  const _isSpike = _volAvg > 0 && c.v > _volAvg * 1.5;
+  const _volColor = _isSpike ? '#c9a84c' : '#f0e6c8';
+
   // Indicator readings at this index (may be null until enough history accumulated)
   const ma50v  = (g.ma50  && g.ma50[idx]  != null) ? g.ma50[idx].toFixed(2)  : '—';
   const ma200v = (g.ma200 && g.ma200[idx] != null) ? g.ma200[idx].toFixed(2) : '—';
-  const rsiv   = (g.rsiArr && g.rsiArr[idx] != null) ? g.rsiArr[idx].toFixed(0) : '—';
+  const rsiNum = (g.rsiArr && g.rsiArr[idx] != null) ? g.rsiArr[idx] : null;
+  const rsiv = rsiNum != null ? rsiNum.toFixed(0) : '—';
+  // RSI colour: green if oversold (<30), red if overbought (>70), cream if neutral
+  const rsiColor = rsiNum == null ? '#f0e6c8'
+                 : rsiNum > 70   ? '#e0524d'
+                 : rsiNum < 30   ? '#26a96c'
+                 : '#f0e6c8';
+
   box.innerHTML =
     '<div>' +
       '<span>' + c.d + '</span>' +
@@ -965,12 +981,12 @@ function showCrosshair(x, y){
       '<span>H <b>' + c.h.toFixed(2) + '</b></span>' +
       '<span>L <b>' + c.l.toFixed(2) + '</b></span>' +
       '<span class="' + cls + '">C <b>' + c.c.toFixed(2) + '</b></span>' +
-      '<span>V <b>' + vfmt + '</b></span>' +
+      '<span>V <b style="color:' + _volColor + '">' + vfmt + ' (' + _volPctStr + ')</b></span>' +
     '</div>' +
     '<div style="margin-top:2px;color:var(--muted)">' +
       '<span>MA50 <b style="color:#c9a84c">' + ma50v + '</b></span>' +
       '<span>MA200 <b style="color:#5aa8ff">' + ma200v + '</b></span>' +
-      '<span>RSI <b style="color:#f0e6c8">' + rsiv + '</b></span>' +
+      '<span>RSI <b style="color:' + rsiColor + '">' + rsiv + '</b></span>' +
     '</div>';
   box.style.display = 'block';
 }
@@ -987,10 +1003,17 @@ function drawVolume(candles){
   const max = Math.max(...vols);
   const avg = vols.reduce((a,b)=>a+b,0)/vols.length;
   const cw = w / candles.length;
+  // Threshold for "spike" volume — bars more than 1.5x the average get a bright gold fill
+  // so unusual days catch the eye without any text clutter on the chart.
+  const spikeThreshold = avg * 1.5;
   for (let i=0;i<candles.length;i++){
     const c = candles[i];
     const bh = h * (c.v/max);
-    ctx.fillStyle = c.c >= c.o ? 'rgba(38,169,108,.6)' : 'rgba(224,82,77,.6)';
+    if (c.v > spikeThreshold){
+      ctx.fillStyle = 'rgba(201,168,76,.95)'; // bright gold for volume spikes
+    } else {
+      ctx.fillStyle = c.c >= c.o ? 'rgba(38,169,108,.6)' : 'rgba(224,82,77,.6)';
+    }
     ctx.fillRect(padL + i*cw + cw*0.15, padT + h - bh, cw*0.7, bh);
   }
   ctx.strokeStyle = '#c9a84c'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
