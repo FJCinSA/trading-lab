@@ -2,10 +2,11 @@
 // Caches the app shell so it works offline / loads instantly on revisit.
 // Bump CACHE_VERSION any time you deploy a new version to force refresh.
 
-const CACHE_VERSION = 'fjc-trading-lab-v1';
+const CACHE_VERSION = 'fjc-trading-lab-v3';
 const APP_SHELL = [
   './',
   './index.html',
+  './trading-lab.html',
   './manifest.json',
   './icon.svg',
   './icon-192.png',
@@ -49,7 +50,29 @@ self.addEventListener('fetch', (event) => {
   // Only intercept GET
   if (req.method !== 'GET') return;
 
-  // Cache-first for app shell, network fallback that updates the cache
+  // NETWORK-FIRST for HTML / navigation requests so the user ALWAYS gets the
+  // latest code on every reload. Cache is used only as offline fallback.
+  const isHTML = req.mode === 'navigate'
+              || (req.headers.get('accept') || '').includes('text/html')
+              || req.url.endsWith('.html')
+              || req.url.endsWith('/');
+
+  if (isHTML) {
+    event.respondWith(
+      fetch(req)
+        .then((resp) => {
+          if (resp && resp.ok && resp.type === 'basic') {
+            const clone = resp.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(req, clone));
+          }
+          return resp;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // CACHE-FIRST for icons, manifest, fonts, JSON - they rarely change.
   event.respondWith(
     caches.match(req).then((cached) => {
       const networkFetch = fetch(req)
