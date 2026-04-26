@@ -870,6 +870,18 @@ function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr){
     }
   }
 
+  // X-axis date labels along the bottom
+  ctx.fillStyle = '#8a94a8'; ctx.font = '10px Inter,Arial';
+  ctx.textAlign = 'center';
+  const xLabelCount = Math.min(6, candles.length);
+  const xStep = Math.max(1, Math.floor(candles.length / xLabelCount));
+  for (let i = 0; i < candles.length; i += xStep){
+    const x = padL + i * cw + cw/2;
+    const label = candles[i].d ? candles[i].d.slice(5) : ''; // MM-DD from YYYY-MM-DD
+    if (label) ctx.fillText(label, x, H - 6);
+  }
+  ctx.textAlign = 'start';
+
   chartGeom = { padL, padT, padR, padB, w, h, lo, hi, cw, candles, W, H };
 
   cv.onmousemove = (e) => {
