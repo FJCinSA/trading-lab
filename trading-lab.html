@@ -870,19 +870,29 @@ function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr){
     }
   }
 
-  // X-axis date labels along the bottom
+  // X-axis date labels along the bottom — format adapts to timeframe
   ctx.fillStyle = '#8a94a8'; ctx.font = '10px Inter,Arial';
   ctx.textAlign = 'center';
-  const xLabelCount = Math.min(6, candles.length);
-  const xStep = Math.max(1, Math.floor(candles.length / xLabelCount));
-  for (let i = 0; i < candles.length; i += xStep){
+  const _MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const _tf = state.timeframe;
+  function _fmtTf(d){
+    if (!d) return '';
+    const parts = d.split('-'); // YYYY-MM-DD
+    const y = parts[0], m = parts[1], dd = parts[2];
+    if (_tf <= 180) return m + '-' + dd;                              // MM-DD
+    if (_tf <= 365) return _MONTHS[parseInt(m,10)-1] + ' ' + dd;       // "Mar 15"
+    return _MONTHS[parseInt(m,10)-1] + " '" + y.slice(2);              // "Mar '26"
+  }
+  const _xLabelTarget = 6;
+  const _xStep = Math.max(1, Math.floor(candles.length / _xLabelTarget));
+  for (let i = 0; i < candles.length; i += _xStep){
     const x = padL + i * cw + cw/2;
-    const label = candles[i].d ? candles[i].d.slice(5) : ''; // MM-DD from YYYY-MM-DD
+    const label = _fmtTf(candles[i].d);
     if (label) ctx.fillText(label, x, H - 6);
   }
   ctx.textAlign = 'start';
 
-  chartGeom = { padL, padT, padR, padB, w, h, lo, hi, cw, candles, W, H };
+  chartGeom = { padL, padT, padR, padB, w, h, lo, hi, cw, candles, W, H, ma50, ma200, rsiArr };
 
   cv.onmousemove = (e) => {
     const rect = cv.getBoundingClientRect();
@@ -938,12 +948,30 @@ function showCrosshair(x, y){
   const c = g.candles[idx];
   const box = document.getElementById('ohlc');
   const cls = c.c >= c.o ? 'up' : 'dn';
+  // Volume formatted compactly
+  const v = c.v;
+  const vfmt = v >= 1e9 ? (v/1e9).toFixed(2) + 'B'
+             : v >= 1e6 ? (v/1e6).toFixed(2) + 'M'
+             : v >= 1e3 ? (v/1e3).toFixed(1) + 'K'
+             : String(v);
+  // Indicator readings at this index (may be null until enough history accumulated)
+  const ma50v  = (g.ma50  && g.ma50[idx]  != null) ? g.ma50[idx].toFixed(2)  : '—';
+  const ma200v = (g.ma200 && g.ma200[idx] != null) ? g.ma200[idx].toFixed(2) : '—';
+  const rsiv   = (g.rsiArr && g.rsiArr[idx] != null) ? g.rsiArr[idx].toFixed(0) : '—';
   box.innerHTML =
-    '<span>' + c.d + '</span>' +
-    '<span>O <b>' + c.o.toFixed(2) + '</b></span>' +
-    '<span>H <b>' + c.h.toFixed(2) + '</b></span>' +
-    '<span>L <b>' + c.l.toFixed(2) + '</b></span>' +
-    '<span class="' + cls + '">C <b>' + c.c.toFixed(2) + '</b></span>';
+    '<div>' +
+      '<span>' + c.d + '</span>' +
+      '<span>O <b>' + c.o.toFixed(2) + '</b></span>' +
+      '<span>H <b>' + c.h.toFixed(2) + '</b></span>' +
+      '<span>L <b>' + c.l.toFixed(2) + '</b></span>' +
+      '<span class="' + cls + '">C <b>' + c.c.toFixed(2) + '</b></span>' +
+      '<span>V <b>' + vfmt + '</b></span>' +
+    '</div>' +
+    '<div style="margin-top:2px;color:var(--muted)">' +
+      '<span>MA50 <b style="color:#c9a84c">' + ma50v + '</b></span>' +
+      '<span>MA200 <b style="color:#5aa8ff">' + ma200v + '</b></span>' +
+      '<span>RSI <b style="color:#f0e6c8">' + rsiv + '</b></span>' +
+    '</div>';
   box.style.display = 'block';
 }
 
