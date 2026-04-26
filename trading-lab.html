@@ -950,6 +950,48 @@ function showCrosshair(x, y){
   ctx.beginPath(); ctx.moveTo(x, g.padT); ctx.lineTo(x, g.padT + g.h); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(g.padL, y); ctx.lineTo(g.padL + g.w, y); ctx.stroke();
   ctx.restore();
+
+  // Date badge anchored to the vertical crosshair (sits at the bottom of the chart)
+  const _hoverIdx = Math.max(0, Math.min(g.candles.length-1, Math.floor((x - g.padL) / g.cw)));
+  const _hoverDate = g.candles[_hoverIdx] && g.candles[_hoverIdx].d ? g.candles[_hoverIdx].d : '';
+  if (_hoverDate){
+    ctx.save();
+    ctx.font = '10px Inter,Arial';
+    const _tw = ctx.measureText(_hoverDate).width;
+    const _bw = _tw + 12;
+    const _bh = 14;
+    let _bx = x - _bw/2;
+    if (_bx < g.padL) _bx = g.padL;
+    if (_bx + _bw > g.W - g.padR) _bx = g.W - g.padR - _bw;
+    const _by = g.H - _bh - 1;
+    ctx.fillStyle = '#c9a84c';
+    ctx.fillRect(_bx, _by, _bw, _bh);
+    ctx.fillStyle = '#1a1408';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(_hoverDate, _bx + _bw/2, _by + _bh/2);
+    ctx.restore();
+  }
+
+  // Price badge anchored to the horizontal crosshair (sits on the left price axis)
+  if (y >= g.padT && y <= g.padT + g.h){
+    const _priceAtY = g.hi - (g.hi - g.lo) * ((y - g.padT) / g.h);
+    const _priceLabel = _priceAtY.toFixed(2);
+    ctx.save();
+    ctx.font = '10px Inter,Arial';
+    const _tw = ctx.measureText(_priceLabel).width;
+    const _bw = _tw + 8;
+    const _bh = 14;
+    const _bx = 1;
+    const _by = Math.max(0, Math.min(g.H - _bh, y - _bh/2));
+    ctx.fillStyle = '#c9a84c';
+    ctx.fillRect(_bx, _by, _bw, _bh);
+    ctx.fillStyle = '#1a1408';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(_priceLabel, _bx + _bw/2, _by + _bh/2);
+    ctx.restore();
+  }
   const idx = Math.max(0, Math.min(g.candles.length-1, Math.floor((x - g.padL) / g.cw)));
   const c = g.candles[idx];
   const box = document.getElementById('ohlc');
