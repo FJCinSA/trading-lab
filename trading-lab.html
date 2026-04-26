@@ -233,6 +233,7 @@
           <span>⚠️ caution</span>
           <span>💚 oversold bounce watch</span>
           <span>🌟 strong bullish pattern</span>
+          <span>💫 strong bearish pattern</span>
         </div>
         <div class="chart-box short">
           <canvas id="volume-chart"></canvas>
@@ -487,8 +488,13 @@ function detectPatterns(candles){
     if (upper > body*2 && lower < body*0.5 && c.c <= c.o){ tags[i] = { e:'⭐', label:'Shooting Star' }; continue; }
     if (i>=2){
       const a = candles[i-2], b = candles[i-1];
+      // Morning Star: red candle, small body, green close above midpoint of day 1 (bullish reversal)
       if (a.c < a.o && Math.abs(b.c-b.o) < (a.h-a.l)*0.3 && c.c > c.o && c.c > (a.o+a.c)/2){
         tags[i] = { e:'🌟', label:'Morning Star' }; continue;
+      }
+      // Evening Star: green candle, small body, red close below midpoint of day 1 (bearish reversal)
+      if (a.c > a.o && Math.abs(b.c-b.o) < (a.h-a.l)*0.3 && c.c < c.o && c.c < (a.o+a.c)/2){
+        tags[i] = { e:'💫', label:'Evening Star' }; continue;
       }
     }
   }
