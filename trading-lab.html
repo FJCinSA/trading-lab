@@ -1697,6 +1697,10 @@ async function askClaude(kind){
   out.style.color = 'var(--cream)';
   out.textContent = 'Thinking...';
 
+  // Build the prompt inside try/catch so any indicator bug surfaces as a visible
+  // error instead of freezing the UI on "Thinking..." forever.
+  let prompt;
+  try {
   const t = TICKERS.find(x=>x.sym === state.active);
   const candles = state.data[state.active].slice(-30);
   const allC = state.data[state.active].map(c=>c.c);
@@ -1724,24 +1728,29 @@ async function askClaude(kind){
   })();
 
   // Bollinger Band position: where is today's close relative to the 20-day BB(2)?
+  // Wrapped in try/catch so any indicator calc problem cannot freeze the AI request.
   const bbContext = (function(){
-    const bb = bollinger(allC, 20, 2);
-    const upL = bb.up[bb.up.length-1];
-    const midL = bb.mid[bb.mid.length-1];
-    const dnL = bb.dn[bb.dn.length-1];
-    if (upL == null || midL == null || dnL == null) return 'not enough data for Bollinger Bands yet';
-    const close = last.c;
-    let zone;
-    if (close >= upL) zone = 'AT or ABOVE the upper Bollinger Band — stretched above its recent average, historically a tense zone';
-    else if (close <= dnL) zone = 'AT or BELOW the lower Bollinger Band — stretched below its recent average, often a coiled-spring zone';
-    else if (close > midL) zone = 'between the middle band and the upper band — slightly above its recent average';
-    else zone = 'between the middle band and the lower band — slightly below its recent average';
-    return 'Bollinger Bands (20-day, 2 standard deviations): upper ' + upL.toFixed(2) +
-           ', middle ' + midL.toFixed(2) + ', lower ' + dnL.toFixed(2) +
-           '. Today close (' + close.toFixed(2) + ') is ' + zone;
+    try {
+      const bb = bollinger(allC, 20, 2);
+      // bollinger() returns { ma, up, dn } — the middle band is bb.ma
+      const upL  = bb.up[bb.up.length-1];
+      const midL = bb.ma[bb.ma.length-1];
+      const dnL  = bb.dn[bb.dn.length-1];
+      if (upL == null || midL == null || dnL == null) return 'Bollinger Bands not yet calculable (need at least 20 candles).';
+      const close = last.c;
+      let zone;
+      if (close >= upL)      zone = 'AT or ABOVE the upper Bollinger Band — stretched above its recent average, historically a tense zone';
+      else if (close <= dnL) zone = 'AT or BELOW the lower Bollinger Band — stretched below its recent average, often a coiled-spring zone';
+      else if (close > midL) zone = 'between the middle band and the upper band — slightly above its recent average';
+      else                   zone = 'between the middle band and the lower band — slightly below its recent average';
+      return 'Bollinger Bands (20-day, 2 standard deviations): upper ' + upL.toFixed(2) +
+             ', middle ' + midL.toFixed(2) + ', lower ' + dnL.toFixed(2) +
+             '. Today close (' + close.toFixed(2) + ') is ' + zone;
+    } catch (e) {
+      return 'Bollinger context skipped (calculation error).';
+    }
   })();
 
-  let prompt;
   if (kind === 'analyse'){
     prompt =
       'You are a patient teacher writing to Dr Francois Coetzee, a 63-year-old doctor learning to read stock charts for the FIRST TIME. ' +
@@ -1779,6 +1788,12 @@ async function askClaude(kind){
       'Snapshot today: ' + summary + '. ' +
       'Format: a short opening sentence ("Good morning, Francois — here is the lay of the land today...") then ONE plain-English line per ticker covering: is it in a long-term uptrend (price above its 200-day average) or downtrend, what the momentum gauge is saying, and ONE thing to watch. ' +
       'Close with one short sentence reminding him why the 200-day average matters more than daily news noise — something like: "remember, the long-term trend tells you the weather; daily moves are just the wind." End with: "Learning tool only — talk to your financial advisor before any real trade."';
+  }
+  } catch (buildErr) {
+    // Any indicator/calc bug surfaces here instead of freezing the UI on "Thinking...".
+    out.style.color = 'var(--red)';
+    out.textContent = 'Could not prepare the AI request: ' + (buildErr && buildErr.message || buildErr);
+    return;
   }
 
   try {
