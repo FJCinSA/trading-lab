@@ -1356,14 +1356,55 @@ function pilotEngage(){
     // Instant mode - no animation, just blast through
     while (autopilotState.engaged){
       const more = pilotTick();
-      if (!more) break;
+      if (!more){ pilotDisengage(pilotEndReason()); break; }
     }
   } else {
     autopilotState.intervalHandle = setInterval(() => {
       const more = pilotTick();
-      if (!more) pilotDisengage('Reached end of available data');
+      if (!more) pilotDisengage(pilotEndReason());
     }, speed);
   }
+}
+
+// Build a teaching-focused disengage message instead of the terse
+// "Reached end of available data". Explains what happened, why it matters,
+// and what to try next. The lab is a learning tool — every message should teach.
+function pilotEndReason(){
+  const log = (state.pilot && state.pilot.log) || [];
+  // Count actual decisions — exclude bookkeeping entries (DISENGAGE / SKIP)
+  const trades = log.filter(e => e.action !== 'DISENGAGE' && e.action !== 'SKIP').length;
+  const skipped = log.filter(e => e.action === 'SKIP').length;
+  const days = autopilotState.daysProcessed || 0;
+  const tickerCount = TICKERS.length;
+  const dayWord = days === 1 ? 'day' : 'days';
+
+  if (trades === 0){
+    let msg = 'I walked through every one of the ' + days + ' ' + dayWord +
+              ' in your window across all ' + tickerCount + ' tickers, and found no setup that matched the rules. ';
+    msg += 'That is the most common result on a short window — and it is a useful lesson: ';
+    msg += 'Golden Crosses fire roughly once a year per stock, RSI extremes need price to actually cross 30 or 70 during the window, ';
+    msg += 'and most days the market simply does not offer a textbook setup. ';
+    msg += 'Patience is the indicator most retail traders never use. ';
+    if (state.timeframe <= 90){
+      msg += 'Try switching to 1Y or 2Y and re-engaging — that is where the autopilot has room to actually work.';
+    } else if (skipped > 0){
+      msg += 'Smart Filter skipped ' + skipped + ' setup' + (skipped === 1 ? '' : 's') + ' with poor historical edge on this ticker — turn it off if you want to see those plays anyway, but the filter is doing its job.';
+    } else {
+      msg += 'The rules held their ground. No forced trades is itself a result.';
+    }
+    return msg;
+  }
+
+  const tradeWord = trades === 1 ? 'decision' : 'decisions';
+  let msg = 'Done. I walked through ' + days + ' ' + dayWord + ' and the rules fired ' +
+            trades + ' ' + tradeWord + '. ';
+  msg += 'The Decision Log above shows each one with the reason — read it like a study guide: ';
+  msg += 'green entries are entries (Golden Cross or RSI bounces), red are exits (RSI overheated or Death Cross), ';
+  msg += 'and the running portfolio value above shows whether the rules beat Buy & Hold.';
+  if (skipped > 0){
+    msg += ' Smart Filter also skipped ' + skipped + ' weaker setup' + (skipped === 1 ? '' : 's') + ' — that is a feature, not a bug.';
+  }
+  return msg;
 }
 
 function pilotDisengage(reason){
@@ -1664,15 +1705,65 @@ async function askClaude(kind){
   const rsiL = rsi(allC, 14).pop();
   const last = candles[candles.length-1];
 
+  // ----- Extra context for the AI: visible patterns and Bollinger position -----
+  // Pattern markers for the last 10 visible candles (so the AI can teach what's on screen)
+  const recentPatterns = (function(){
+    const tags = detectPatterns(candles);
+    const out = [];
+    const startIdx = Math.max(0, candles.length - 10);
+    for (let i = startIdx; i < candles.length; i++){
+      if (tags[i]){
+        const daysAgo = candles.length - 1 - i;
+        const when = daysAgo === 0 ? 'today'
+                   : daysAgo === 1 ? 'yesterday'
+                   : (daysAgo + ' trading days ago');
+        out.push(when + ' = ' + tags[i].label + ' (' + tags[i].e + ')');
+      }
+    }
+    return out.length ? out.join('; ') : 'none in the last 10 candles';
+  })();
+
+  // Bollinger Band position: where is today's close relative to the 20-day BB(2)?
+  const bbContext = (function(){
+    const bb = bollinger(allC, 20, 2);
+    const upL = bb.up[bb.up.length-1];
+    const midL = bb.mid[bb.mid.length-1];
+    const dnL = bb.dn[bb.dn.length-1];
+    if (upL == null || midL == null || dnL == null) return 'not enough data for Bollinger Bands yet';
+    const close = last.c;
+    let zone;
+    if (close >= upL) zone = 'AT or ABOVE the upper Bollinger Band — stretched above its recent average, historically a tense zone';
+    else if (close <= dnL) zone = 'AT or BELOW the lower Bollinger Band — stretched below its recent average, often a coiled-spring zone';
+    else if (close > midL) zone = 'between the middle band and the upper band — slightly above its recent average';
+    else zone = 'between the middle band and the lower band — slightly below its recent average';
+    return 'Bollinger Bands (20-day, 2 standard deviations): upper ' + upL.toFixed(2) +
+           ', middle ' + midL.toFixed(2) + ', lower ' + dnL.toFixed(2) +
+           '. Today close (' + close.toFixed(2) + ') is ' + zone;
+  })();
+
   let prompt;
   if (kind === 'analyse'){
     prompt =
-      'You are a calm, conservative trading coach speaking to Dr Francois Coetzee, a doctor learning to invest. ' +
-      'He uses ONLY MA50, MA200, RSI and volume. He values plain language, no jargon, no hype. Always remind him this is a learning tool, not advice. ' +
+      'You are a patient teacher writing to Dr Francois Coetzee, a 63-year-old doctor learning to read stock charts for the FIRST TIME. ' +
+      'Treat him as a complete novice. Assume he does NOT know what MA50, MA200, RSI, "pulled back", "constructive", "momentum", or "consolidation" mean. ' +
+      'Whenever you use a technical term, translate it in plain English the same sentence — for example: ' +
+      '"MA50 (the average closing price over the last 50 trading days — a smooth line that shows where the stock has been trending recently)", ' +
+      '"MA200 (the same idea but over 200 days — the long-term anchor; price above it = healthy uptrend, below = downtrend)", ' +
+      '"RSI (a 0-100 momentum gauge: under 30 = beaten down and possibly oversold, over 70 = bid up hard and possibly overbought, 40-60 = neutral)". ' +
+      'Use everyday analogies where they help (weather, traffic, body temperature). Avoid hedge-fund jargon entirely. No "constructive", no "drifted", no "consolidation". Just plain English a non-trader could read. ' +
       'Stock: ' + t.sym + ' (' + t.name + '), exchange ' + t.exch + ', currency ' + t.ccy + '. ' +
-      'Latest close: ' + last.c.toFixed(2) + '. MA50: ' + (ma50L?ma50L.toFixed(2):'n/a') + '. MA200: ' + (ma200L?ma200L.toFixed(2):'n/a') + '. RSI(14): ' + (rsiL?rsiL.toFixed(0):'n/a') + '. ' +
+      'Today: close ' + last.c.toFixed(2) + ', MA50 ' + (ma50L?ma50L.toFixed(2):'n/a') + ', MA200 ' + (ma200L?ma200L.toFixed(2):'n/a') + ', RSI(14) ' + (rsiL?rsiL.toFixed(0):'n/a') + '. ' +
+      bbContext + '. ' +
+      'Recent candlestick patterns visible on the chart: ' + recentPatterns + '. ' +
+      'If any pattern shows up above, briefly explain what that pattern means in plain English when you mention it (e.g. "Hammer = a single candle with a long lower wick and small body, often a bullish reversal hint"). ' +
       'Last 30 candles (date,O,H,L,C,V): ' + candles.map(c=>[c.d,c.o.toFixed(2),c.h.toFixed(2),c.l.toFixed(2),c.c.toFixed(2),c.v].join(',')).join(' | ') + '. ' +
-      'Give a short read in 4 bullet points: trend, momentum, volume, what to watch tomorrow. End with one line: "Reminder: paper trading and learning. Speak to your financial advisor before any real trade."';
+      'Write FOUR short bullet points titled exactly: ' +
+      '(1) **Trend** — is the stock going up, down, or sideways over the past few months, in plain words? Mention the Bollinger position when relevant (e.g. "stretched above the upper band"). ' +
+      '(2) **Momentum** — is buying/selling pressure strong, fading, or balanced? Translate the RSI number into "hot / cold / normal". ' +
+      '(3) **Volume & Patterns** — are people trading heavily or quietly? Mention any visible candlestick patterns from the list above and explain what they mean in plain words. ' +
+      '(4) **What to watch tomorrow** — ONE specific price level or behaviour, explained so a non-trader can spot it. ' +
+      'Each bullet: 2-3 sentences max. Define every technical term the first time. Warm, patient tone — you are teaching, not reporting. ' +
+      'End with this exact line on its own: "Reminder: this is a learning tool, not advice. Speak to your financial advisor before any real trade."';
   } else {
     const summary = TICKERS.map(tt => {
       const cl = state.data[tt.sym].map(c=>c.c);
@@ -1682,10 +1773,12 @@ async function askClaude(kind){
       return tt.sym + ': ' + last.toFixed(2) + ' ' + tt.ccy + ', MA200 ' + (m200?m200.toFixed(2):'n/a') + ', RSI ' + (r?r.toFixed(0):'n/a');
     }).join(' || ');
     prompt =
-      'You are giving Dr Francois Coetzee a one-paragraph morning briefing on four tickers he tracks for learning: TDY, TSLA, SOL, MNST. ' +
-      'Be calm, plain, conservative. Mention which is in long-term uptrend (above MA200), any extreme RSI, and one thing to watch each. ' +
-      'Snapshot: ' + summary + '. ' +
-      'End with one line about why MA200 matters more than the noise.';
+      'You are giving Dr Francois Coetzee — a 63-year-old doctor LEARNING to read stock charts — a plain-English morning briefing on four stocks: TDY (Teledyne Technologies), TSLA (Tesla), SOL (Sasol, JSE), and MNST (Monster Beverage). ' +
+      'Treat him as a beginner. When you mention MA200 or RSI, define them briefly the first time: MA200 = average closing price over the last 200 days (the long-term trend line); RSI = a 0-100 momentum gauge (under 30 = oversold/beaten down, over 70 = overbought/heated up, around 50 = neutral). ' +
+      'No jargon, no hype. Use everyday language a non-trader could read. ' +
+      'Snapshot today: ' + summary + '. ' +
+      'Format: a short opening sentence ("Good morning, Francois — here is the lay of the land today...") then ONE plain-English line per ticker covering: is it in a long-term uptrend (price above its 200-day average) or downtrend, what the momentum gauge is saying, and ONE thing to watch. ' +
+      'Close with one short sentence reminding him why the 200-day average matters more than daily news noise — something like: "remember, the long-term trend tells you the weather; daily moves are just the wind." End with: "Learning tool only — talk to your financial advisor before any real trade."';
   }
 
   try {
