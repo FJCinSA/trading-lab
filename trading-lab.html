@@ -129,7 +129,8 @@
     content:attr(data-tip);
     position:absolute;
     bottom:calc(100% + 8px); left:50%;
-    transform:translateX(-50%);
+    /* Edge-guard offset is set by JS on hover to keep tooltip inside the viewport */
+    transform:translateX(calc(-50% + var(--tip-offset-x, 0px)));
     background:var(--bg);
     border:1px solid var(--gold);
     border-radius:6px;
@@ -162,6 +163,7 @@
   .toggle[data-tip]:hover::after,
   .timeframe button[data-tip]:hover::after{
     bottom:auto; top:calc(100% + 8px);
+    /* Inherit the JS-set --tip-offset-x; transform already references it above */
   }
   .toggle[data-tip]:hover::before,
   .timeframe button[data-tip]:hover::before{
@@ -1821,6 +1823,31 @@ async function askClaude(kind){
 
 window.addEventListener('resize', () => render());
 init();
+
+// Tooltip edge guard: shift tooltips horizontally so they never escape the viewport.
+// On narrow screens (phones, tablets, even cramped browser windows on desktop),
+// data-tip tooltips centered above their trigger could clip past the right edge.
+// This handler measures the trigger's position on hover and sets a CSS variable
+// that nudges the tooltip back into view.
+(function tooltipEdgeGuard(){
+  const TIP_MAX = 280;     // matches max-width in CSS
+  const MARGIN  = 12;      // breathing room from viewport edge
+  document.addEventListener('mouseover', (e) => {
+    const el = e.target.closest && e.target.closest('[data-tip]');
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const triggerCenter = r.left + r.width / 2;
+    const halfTip = TIP_MAX / 2;
+    const vw = window.innerWidth;
+    let offset = 0;
+    if (triggerCenter - halfTip < MARGIN) {
+      offset = MARGIN - (triggerCenter - halfTip);              // shift right
+    } else if (triggerCenter + halfTip > vw - MARGIN) {
+      offset = (vw - MARGIN) - (triggerCenter + halfTip);       // shift left
+    }
+    el.style.setProperty('--tip-offset-x', offset + 'px');
+  });
+})();
 
 // Register service worker for PWA / offline use (only when served over HTTP/HTTPS, not file://)
 if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
