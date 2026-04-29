@@ -192,6 +192,14 @@
   <span id="proxy-status">not configured</span>
 </div>
 
+<div class="config-bar">
+  <span data-tip="Cloudflare Worker that fetches real OHLC data from Yahoo Finance. Once set, click 'Refresh prices' to replace the synthetic data with the latest live candles for all four tickers. Falls back silently to synthetic if the fetch fails.">Yahoo data URL:</span>
+  <input id="yahoo-url" placeholder="https://yahoo-proxy.your-subdomain.workers.dev/" />
+  <button class="btn" id="save-yahoo">Save</button>
+  <button class="btn gold" id="refresh-yahoo" disabled data-tip="Pull the latest 2 years of daily candles for TDY, TSLA, SOL.JO and MNST from Yahoo Finance via your proxy. Replaces the synthetic data engine with real market data.">Refresh prices</button>
+  <span id="data-status">synthetic data</span>
+</div>
+
 <div class="tabs" id="tabs"></div>
 
 <div class="layout">
@@ -373,19 +381,20 @@
 //============================================================
 
 const TICKERS = [
-  { sym:'TDY',  name:'Teledyne Technologies', exch:'NYSE',   ccy:'USD', start:580, vol:0.018, drift: 0.0015 },
-  { sym:'TSLA', name:'Tesla',                 exch:'NYSE',   ccy:'USD', start:250, vol:0.038, drift: 0.0000 },
-  { sym:'SOL',  name:'Sasol',                 exch:'JSE',    ccy:'ZAR', start:120, vol:0.030, drift:-0.0005 },
-  { sym:'MNST', name:'Monster Beverage',      exch:'NASDAQ', ccy:'USD', start:58,  vol:0.020, drift: 0.0008 }
+  { sym:'TDY',  name:'Teledyne Technologies', exch:'NYSE',   ccy:'USD', yahoo:'TDY',    start:580, vol:0.018, drift: 0.0015 },
+  { sym:'TSLA', name:'Tesla',                 exch:'NYSE',   ccy:'USD', yahoo:'TSLA',   start:250, vol:0.038, drift: 0.0000 },
+  { sym:'SOL',  name:'Sasol',                 exch:'JSE',    ccy:'ZAR', yahoo:'SOL.JO', start:120, vol:0.030, drift:-0.0005 },
+  { sym:'MNST', name:'Monster Beverage',      exch:'NASDAQ', ccy:'USD', yahoo:'MNST',   start:58,  vol:0.020, drift: 0.0008 }
 ];
 
 const FX_USD_ZAR = 18.50;
 
-const LS_PORTFOLIO = 'fjc-trading-portfolio-v1';
-const LS_ALERTS    = 'fjc-trading-alerts-v1';
-const LS_PROXY     = 'fjc-trading-proxy-v1';
-const LS_SR        = 'fjc-trading-sr-v1';
-const LS_PILOT     = 'fjc-trading-pilot-v1';
+const LS_PORTFOLIO   = 'fjc-trading-portfolio-v1';
+const LS_ALERTS      = 'fjc-trading-alerts-v1';
+const LS_PROXY       = 'fjc-trading-proxy-v1';
+const LS_SR          = 'fjc-trading-sr-v1';
+const LS_PILOT       = 'fjc-trading-pilot-v1';
+const LS_YAHOO_PROXY = 'fjc-trading-yahoo-proxy-v1';
 
 let state = {
   active: 'TDY',
@@ -396,7 +405,10 @@ let state = {
   portfolio: loadPortfolio(),
   alerts:    loadAlerts(),
   pilot:     loadPilot(),
-  proxy:     localStorage.getItem(LS_PROXY) || ''
+  proxy:     localStorage.getItem(LS_PROXY) || '',
+  yahooProxy: localStorage.getItem(LS_YAHOO_PROXY) || '',
+  dataMode:   'synthetic',   // 'synthetic' | 'live'
+  liveDataAt: null            // timestamp of most recent successful Yahoo fetch
 };
 
 // Autopilot runtime state (not persisted - resets on reload)
@@ -741,11 +753,93 @@ function bindControls(){
     updateProxyStatus();
   };
   updateProxyStatus();
+
+  // Yahoo proxy URL field + Refresh button
+  document.getElementById('yahoo-url').value = state.yahooProxy;
+  document.getElementById('save-yahoo').onclick = () => {
+    state.yahooProxy = document.getElementById('yahoo-url').value.trim();
+    localStorage.setItem(LS_YAHOO_PROXY, state.yahooProxy);
+    updateYahooStatus();
+  };
+  document.getElementById('refresh-yahoo').onclick = refreshAllFromYahoo;
+  updateYahooStatus();
 }
 function updateProxyStatus(){
   const s = document.getElementById('proxy-status');
   s.textContent = state.proxy ? 'configured' : 'not configured';
   s.style.color = state.proxy ? 'var(--green)' : 'var(--muted)';
+}
+
+function updateYahooStatus(){
+  const btn = document.getElementById('refresh-yahoo');
+  const status = document.getElementById('data-status');
+  const pill = document.getElementById('data-mode');
+  if (state.yahooProxy){
+    btn.disabled = false;
+    if (state.dataMode === 'live' && state.liveDataAt){
+      status.style.color = 'var(--green)';
+      status.textContent = 'live (refreshed ' + state.liveDataAt.toLocaleTimeString() + ')';
+      if (pill){ pill.textContent = 'LIVE DATA'; pill.style.color = 'var(--green)'; }
+    } else {
+      status.style.color = 'var(--muted)';
+      status.textContent = 'synthetic data — click Refresh prices for live';
+      if (pill){ pill.textContent = 'SYNTHETIC DATA'; pill.style.color = 'var(--muted)'; }
+    }
+  } else {
+    btn.disabled = true;
+    status.style.color = 'var(--muted)';
+    status.textContent = 'synthetic data (set Yahoo URL to enable live)';
+    if (pill){ pill.textContent = 'SYNTHETIC DATA'; pill.style.color = 'var(--muted)'; }
+  }
+}
+
+// Fetch one ticker's OHLC from the user's Yahoo proxy Worker.
+// Returns an array of {d, o, h, l, c, v} candles in the same shape the lab uses.
+async function fetchYahoo(ticker){
+  const t = TICKERS.find(x => x.sym === ticker);
+  if (!t) throw new Error('Unknown ticker: ' + ticker);
+  if (!state.yahooProxy) throw new Error('Yahoo proxy URL not configured');
+  if (!t.yahoo) throw new Error('No Yahoo symbol mapping for ' + ticker);
+  const base = state.yahooProxy.replace(/\/$/, '');
+  const url  = base + '/?symbol=' + encodeURIComponent(t.yahoo) + '&range=2y&interval=1d';
+  const resp = await fetch(url);
+  if (!resp.ok){
+    const text = await resp.text();
+    throw new Error('Yahoo proxy ' + resp.status + ': ' + text.slice(0, 200));
+  }
+  const data = await resp.json();
+  if (!data || !Array.isArray(data.candles) || data.candles.length === 0){
+    throw new Error('Yahoo proxy returned no candles for ' + ticker);
+  }
+  return data.candles;
+}
+
+// Refresh ALL tickers from Yahoo in parallel. On success, replace state.data
+// and re-render. On failure, leave existing data untouched and surface the error.
+async function refreshAllFromYahoo(){
+  const status = document.getElementById('data-status');
+  const btn    = document.getElementById('refresh-yahoo');
+  if (!state.yahooProxy){
+    status.style.color = 'var(--red)';
+    status.textContent = 'Yahoo proxy URL not configured';
+    return;
+  }
+  btn.disabled = true;
+  status.style.color = 'var(--cream)';
+  status.textContent = 'fetching live data for all tickers...';
+  try {
+    const results = await Promise.all(TICKERS.map(t => fetchYahoo(t.sym)));
+    TICKERS.forEach((t, i) => { state.data[t.sym] = results[i]; });
+    state.dataMode  = 'live';
+    state.liveDataAt = new Date();
+    updateYahooStatus();
+    render();
+  } catch (e) {
+    status.style.color = 'var(--red)';
+    status.textContent = 'fetch failed: ' + (e && e.message || e) + ' — keeping previous data';
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function updateClocks(){
