@@ -491,6 +491,13 @@ async function jumpToCrash(scenario) {
     buildTabs();
   }
 
+  // Widen the timeframe to 90D so the user sees meaningful context at the crash onset
+  // (the default 30D shows too little of the pre-crash environment)
+  state.timeframe = 90;
+  document.querySelectorAll('#tf button').forEach(b => {
+    b.classList.toggle('on', +b.dataset.tf === 90);
+  });
+
   // Show the setting-the-scene context panel above the chart
   showCrashContext(scenario);
 
