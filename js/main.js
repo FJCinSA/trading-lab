@@ -33,7 +33,8 @@ import { renderAnalogs }                               from './analogs.js';
 import { initReplay, setupReplayMode, enterReplay,
          updateReplayUI }                              from './replay.js';
 import { addJournalEntry, renderJournal, clearJournal } from './journal.js';
-import { renderCrashes, showCrashContext }              from './crashes.js';
+import { renderCrashes, showCrashContext,
+         hideCrashContext }                              from './crashes.js';
 import { renderCurriculum, closeLesson }               from './curriculum.js';
 
 // ------------------------------------------------------------------
@@ -498,8 +499,19 @@ async function jumpToCrash(scenario) {
     b.classList.toggle('on', +b.dataset.tf === 90);
   });
 
+  // Activate crash study state so chart.js draws the crash zone overlay
+  state.crashStudy = scenario;
+
   // Show the setting-the-scene context panel above the chart
   showCrashContext(scenario);
+
+  // Override the close button so it also clears crashStudy + redraws
+  const ccClose = document.getElementById('crash-context-close');
+  if (ccClose) ccClose.onclick = () => {
+    hideCrashContext();
+    state.crashStudy = null;
+    render();
+  };
 
   // Jump replay to the crash onset — uses jumpToAnalog which handles
   // the full replay index build, state backup, and render() call

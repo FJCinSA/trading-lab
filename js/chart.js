@@ -105,6 +105,57 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
   // Candlestick bodies and wicks
   const cw = w / candles.length;
   const bw = Math.max(1, cw * 0.7);
+
+  // ── Crash zone overlay (Pillar 6) ────────────────────────────────
+  // Drawn AFTER grid lines, BEFORE candles so candlesticks render on top.
+  // Requires state.crashStudy to be set by jumpToCrash() in main.js.
+  if (state.crashStudy) {
+    const { startDate, endDate } = state.crashStudy;
+
+    // Subtle red tint over the entire chart area — signals danger mode
+    ctx.fillStyle = 'rgba(200, 30, 30, 0.045)';
+    ctx.fillRect(padL, padT, w, h);
+
+    // Find the pixel x-positions for crash start and end dates
+    let czStartX = null;
+    let czEndX   = padL + w;          // default: right edge of chart
+    for (let i = 0; i < candles.length; i++) {
+      if (czStartX === null && candles[i].d >= startDate) {
+        czStartX = padL + i * cw;
+      }
+      if (endDate && czStartX !== null && candles[i].d > endDate) {
+        czEndX = padL + i * cw;
+        break;
+      }
+    }
+
+    if (czStartX !== null) {
+      // Shaded crash zone band between onset and trough
+      ctx.fillStyle = 'rgba(220, 50, 50, 0.10)';
+      ctx.fillRect(czStartX, padT, czEndX - czStartX, h);
+
+      // Dashed vertical line marking the crash onset
+      ctx.save();
+      ctx.strokeStyle = 'rgba(220, 65, 65, 0.80)';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath();
+      ctx.moveTo(czStartX, padT);
+      ctx.lineTo(czStartX, padT + h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // "▼ CRASH ONSET" label just inside the onset line
+      ctx.fillStyle   = 'rgba(235, 85, 85, 0.95)';
+      ctx.font        = 'bold 10px Inter,Arial';
+      ctx.textAlign   = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('▼ CRASH ONSET', czStartX + 4, padT + 3);
+      ctx.restore();
+    }
+  }
+  // ── end crash zone overlay ────────────────────────────────────────
+
   for (let i = 0; i < candles.length; i++) {
     const c  = candles[i];
     const x  = padL + i * cw + cw / 2;

@@ -33,6 +33,7 @@ export const CRASH_SCENARIOS = [
     magnitude: '-57%',
     duration: '17 months',
     startDate: '2007-10-01',
+    endDate:   '2009-03-31',    // trough: S&P 500 bottom
     fetchStart: '2005-01-01',   // 3 years of warmup for MA200
     fetchEnd:   '2011-12-31',   // covers crash + early recovery
     context: [
@@ -50,6 +51,7 @@ export const CRASH_SCENARIOS = [
     magnitude: '-83%',
     duration: '31 months',
     startDate: '2000-01-03',
+    endDate:   '2002-10-31',    // trough: Nasdaq 100 bottom
     fetchStart: null,           // QQQ started Mar 1999 — fetch from inception
     fetchEnd:   '2004-12-31',   // covers full crash (Oct 2002 trough) + recovery
     context: [
@@ -67,6 +69,7 @@ export const CRASH_SCENARIOS = [
     magnitude: '-34%',
     duration: '33 days',
     startDate: '2020-01-15',
+    endDate:   '2020-04-15',    // ~3 weeks past March 23 bottom
     fetchStart: '2017-01-01',   // 3 years of warmup
     fetchEnd:   '2022-12-31',   // covers crash + full V-shaped recovery
     context: [
@@ -84,6 +87,7 @@ export const CRASH_SCENARIOS = [
     magnitude: '-77%',
     duration: '14 months',
     startDate: '2021-07-01',
+    endDate:   '2022-11-30',    // trough: META bottomed ~Nov 2022
     fetchStart: '2018-01-01',   // META listed 2012; 3 years warmup
     fetchEnd:   '2024-12-31',   // covers crash (Nov 2022 trough) + recovery
     context: [
@@ -101,6 +105,7 @@ export const CRASH_SCENARIOS = [
     magnitude: '-10%',
     duration: '~2 weeks',
     startDate: '2024-07-15',
+    endDate:   '2024-09-15',    // ~6 weeks covering the panic + full recovery
     fetchStart: '2022-01-01',   // 2.5 years warmup
     fetchEnd:   null,           // fetch up to today (recent event)
     context: [
@@ -118,6 +123,7 @@ export const CRASH_SCENARIOS = [
     magnitude: '-40%',
     duration: '~8 weeks',
     startDate: '2015-11-01',
+    endDate:   '2016-06-30',    // covers the Nene-firing shock + partial recovery
     fetchStart: '2012-01-01',   // 4 years warmup for SOL.JO
     fetchEnd:   '2018-12-31',   // covers event + 3 years aftermath
     context: [

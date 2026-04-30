@@ -82,7 +82,11 @@ export const state = {
 
   // Overlay comparison (Pillar 5) — null = off, or a ticker symbol e.g. 'TSLA'
   // Not persisted — view preference only, resets on reload
-  overlay: { sym: null }
+  overlay: { sym: null },
+
+  // Active crash case study (Pillar 6) — set by jumpToCrash(), cleared on panel close
+  // Used by chart.js to draw the crash zone overlay shading
+  crashStudy: null
 };
 
 // ------------------------------------------------------------------
