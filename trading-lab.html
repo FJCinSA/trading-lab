@@ -111,6 +111,18 @@
   .decision-log .sym{color:var(--gold);font-weight:600;margin:0 4px}
   .decision-log .action{font-weight:700;text-transform:uppercase;font-size:10px}
   .decision-log .reason{display:block;color:var(--muted);margin-top:2px;font-style:italic}
+  /* ---- Decision Journal (Pillar 4) ---- */
+  #journal-entries{max-height:320px;overflow-y:auto}
+  .journal-entry{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-bottom:6px;background:var(--panel-2);font-size:12px;line-height:1.5}
+  .journal-entry:last-child{margin-bottom:0}
+  .je-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  .je-date{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
+  .je-ticker{color:var(--gold);font-weight:700}
+  .je-type{font-size:11px;text-transform:uppercase;font-weight:700}
+  .je-qty{color:var(--cream);font-variant-numeric:tabular-nums;font-size:11px}
+  .je-reasoning{color:var(--cream);margin-top:2px;padding:4px 6px;background:rgba(255,255,255,.04);border-radius:4px}
+  .je-pilot-ctx{color:var(--muted);margin-top:2px;font-style:italic;font-size:11px}
+  /* ---- End Journal ---- */
   .autopilot-status{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px}
   .ap-led{width:14px;height:14px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s,box-shadow .3s}
   .ap-led.engaged{background:var(--green);box-shadow:0 0 10px rgba(38,169,108,.8);animation:appulse 1.5s infinite}
@@ -389,6 +401,31 @@
       </div>
       <ul id="alert-list"></ul>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- Pillar 4 — Decision Journal                                   -->
+    <!-- ============================================================ -->
+    <div class="card" id="journal-card" style="margin-top:12px">
+      <div class="row" style="align-items:center;margin-bottom:4px">
+        <h3 style="margin:0">Decision Journal</h3>
+        <span class="grow"></span>
+        <button class="btn gold" id="btn-journal-review"
+          data-tip="Ask Claude to review your recent trade decisions and identify patterns in your reasoning. Requires AI proxy URL.">
+          AI Review
+        </button>
+        <button class="btn" id="btn-clear-journal" style="margin-left:6px"
+          data-tip="Clear all journal entries. This cannot be undone.">
+          Clear
+        </button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 8px">
+        Every trade you make — and the reason you gave — is recorded here.
+        This is your learning record, not just a P/L log.
+        The AI Review reads your last 14 days and looks for patterns.
+      </p>
+      <div id="journal-entries"></div>
+    </div>
+
   </div>
 
 </div>

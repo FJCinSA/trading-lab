@@ -19,6 +19,7 @@
 import { TICKERS, ENVELOPE_DRAWDOWN_PCT } from './config.js';
 import { state, defaultPilot, savePilot, tickerCcy, priceToZar, dayDiff } from './state.js';
 import { sma, rsi }                       from './indicators.js';
+import { addJournalEntry }                from './journal.js';
 
 // ------------------------------------------------------------------
 // Module-private runtime state (not persisted — resets on reload)
@@ -323,6 +324,16 @@ function executeDecision(sym, candle, decision) {
       price: candle.c, ccy: tickerCcy(sym), qty: shares,
       value: cost, reason: decision.reason
     });
+    addJournalEntry({
+      type:             decision.action,   // 'ENTER' | 'ADD'
+      ticker:           sym,
+      price:            candle.c,
+      qty:              shares,
+      ccy:              tickerCcy(sym),
+      reasoning:        '',
+      autopilotContext: decision.reason,
+      source:           'autopilot'
+    });
 
   } else if (decision.action === 'TRIM' || decision.action === 'EXIT') {
     if (pos.shares < 1) return;
@@ -341,6 +352,16 @@ function executeDecision(sym, candle, decision) {
       date: candle.d, sym, action: decision.action,
       price: candle.c, ccy: tickerCcy(sym), qty: sellShares,
       value: proceeds, reason: decision.reason
+    });
+    addJournalEntry({
+      type:             decision.action,   // 'TRIM' | 'EXIT'
+      ticker:           sym,
+      price:            candle.c,
+      qty:              sellShares,
+      ccy:              tickerCcy(sym),
+      reasoning:        '',
+      autopilotContext: decision.reason,
+      source:           'autopilot'
     });
   }
 }

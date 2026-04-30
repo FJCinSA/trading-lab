@@ -44,9 +44,10 @@ export function renderPortfolio() {
 
 /**
  * Execute a manual paper trade.
- * @param {number} direction - +1 = buy, -1 = sell
+ * @param {number}   direction - +1 = buy, -1 = sell
+ * @param {Function} [onSuccess] - optional callback fired after a successful trade
  */
-export function trade(direction) {
+export function trade(direction, onSuccess) {
   const qty = +document.getElementById('qty').value;
   if (!qty || qty <= 0) return;
   const t    = TICKERS.find(x => x.sym === state.active);
@@ -70,6 +71,7 @@ export function trade(direction) {
   state.portfolio.positions[t.sym] = pos;
   savePortfolio();
   renderPortfolio();
+  if (onSuccess) onSuccess({ ticker: t.sym, price: last, qty, ccy: t.ccy });
 }
 
 // ------------------------------------------------------------------

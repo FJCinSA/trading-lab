@@ -1,8 +1,8 @@
 // ============================================================
-// FJC Trading Lab — Main Orchestrator (Pillar 1-3 MVP)
+// FJC Trading Lab — Main Orchestrator (Pillars 1-4)
 // ============================================================
 // This is the entry point. Its only job is to wire everything together:
-//   • imports all 13 sibling modules
+//   • imports all 14 sibling modules
 //   • owns render(), renderSignals(), buildTabs(), bindControls(),
 //     marketStatus(), updateClocks(), jumpToAnalog(), init()
 //   • injects render() + updateYahooStatus() into chart.js and replay.js
@@ -31,6 +31,7 @@ import { pilotEngage, pilotDisengage, renderPilot,
 import { renderAnalogs }                               from './analogs.js';
 import { initReplay, setupReplayMode, enterReplay,
          updateReplayUI }                              from './replay.js';
+import { addJournalEntry, renderJournal, clearJournal } from './journal.js';
 
 // ------------------------------------------------------------------
 // Core render function — redraws everything visible on screen
@@ -65,6 +66,7 @@ export function render() {
   renderPortfolio();
   renderAlerts();
   renderPilot();
+  renderJournal();
   checkAlerts();
 }
 
@@ -164,9 +166,41 @@ function bindControls() {
     render();
   };
 
-  // ---- Manual paper trading ----
-  document.getElementById('btn-buy') .onclick = () => trade(+1);
-  document.getElementById('btn-sell').onclick = () => trade(-1);
+  // ---- Manual paper trading — with Decision Journal prompt ----
+  function tradeWithReasoning(direction) {
+    const t    = TICKERS.find(x => x.sym === state.active);
+    const qty  = +document.getElementById('qty').value;
+    if (!qty || qty <= 0) { trade(direction); return; } // let trade() validate
+    const last = state.data[t.sym] && state.data[t.sym][state.data[t.sym].length - 1].c;
+    const verb = direction > 0 ? 'BUY' : 'SELL';
+    const ccy  = t.ccy === 'USD' ? '$' : 'R';
+
+    const reasoning = window.prompt(
+      verb + ' ' + qty + ' x ' + t.sym + ' @ ' + ccy + (last ? last.toFixed(2) : '?') + '\n\n' +
+      'Why are you making this trade?\n' +
+      '(Write your reason — this is your learning record.\n' +
+      ' Press OK with nothing typed to trade without a note.\n' +
+      ' Press Cancel to abort the trade.)'
+    );
+
+    if (reasoning === null) return; // user cancelled — do not trade
+
+    trade(direction, ({ ticker, price, qty: q, ccy: c }) => {
+      addJournalEntry({
+        type:             verb,
+        ticker,
+        price,
+        qty:              q,
+        ccy:              c,
+        reasoning:        reasoning.trim(),
+        autopilotContext: '',
+        source:           'manual'
+      });
+    });
+  }
+
+  document.getElementById('btn-buy') .onclick = () => tradeWithReasoning(+1);
+  document.getElementById('btn-sell').onclick = () => tradeWithReasoning(-1);
   document.getElementById('qty').addEventListener('input',      updateTradeTooltips);
   document.getElementById('btn-buy') .addEventListener('mouseenter', updateTradeTooltips);
   document.getElementById('btn-sell').addEventListener('mouseenter', updateTradeTooltips);
@@ -183,8 +217,12 @@ function bindControls() {
   document.getElementById('btn-add-alert').onclick = addAlert;
 
   // ---- AI buttons ----
-  document.getElementById('btn-analyse') .onclick = () => askClaude('analyse');
-  document.getElementById('btn-briefing').onclick = () => askClaude('briefing');
+  document.getElementById('btn-analyse')      .onclick = () => askClaude('analyse');
+  document.getElementById('btn-briefing')     .onclick = () => askClaude('briefing');
+  document.getElementById('btn-journal-review').onclick = () => askClaude('journal-review');
+
+  // ---- Decision Journal ----
+  document.getElementById('btn-clear-journal').onclick = clearJournal;
 
   // ---- Historical Analogs ----
   // Pass jumpToAnalog as the callback so renderAnalogs can trigger replay

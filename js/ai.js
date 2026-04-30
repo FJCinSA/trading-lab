@@ -5,9 +5,10 @@
 // proxy. The proxy holds the Anthropic API key — it never appears
 // in the browser or in this source file.
 //
-// Two modes:
-//   'analyse'  — 4-bullet read on the active ticker's latest candle
-//   'briefing' — plain-English morning summary of all four tickers
+// Three modes:
+//   'analyse'        — 4-bullet read on the active ticker's latest candle
+//   'briefing'       — plain-English morning summary of all four tickers
+//   'journal-review' — review last 14 days of journal entries for patterns
 //
 // Every prompt is written for a complete novice (Dr Francois Coetzee,
 // 63-year-old anaesthesiologist learning markets). Technical terms are
@@ -18,6 +19,7 @@ import { TICKERS }                   from './config.js';
 import { state }                     from './state.js';
 import { sma, bollinger, rsi }       from './indicators.js';
 import { detectPatterns }            from './patterns.js';
+import { getJournalEntries }         from './journal.js';
 
 export async function askClaude(kind) {
   const out = document.getElementById('ai-out');
@@ -82,7 +84,58 @@ export async function askClaude(kind) {
       }
     })();
 
-    if (kind === 'analyse') {
+    if (kind === 'journal-review') {
+      // ---- Journal review mode ----
+      const entries = getJournalEntries(14);
+
+      if (entries.length === 0) {
+        out.textContent =
+          'Your Decision Journal is empty for the last 14 days. ' +
+          'Make a few manual trades — and record your reasoning each time — then come back for a review.';
+        return;
+      }
+
+      // Format entries as a readable list for the prompt
+      const entryLines = entries.map((e, i) => {
+        const src = e.source === 'autopilot' ? '[PILOT]' : '[MANUAL]';
+        const why = e.reasoning
+          ? 'Reason: "' + e.reasoning + '"'
+          : e.autopilotContext
+            ? 'Pilot logic: "' + e.autopilotContext + '"'
+            : 'No reason recorded.';
+        return (i + 1) + '. ' + e.date + ' | ' + src + ' | ' + e.type + ' ' +
+               e.qty + ' x ' + e.ticker + ' @ ' +
+               (e.ccy === 'USD' ? '$' : 'R') + Number(e.price).toFixed(2) +
+               ' | ' + why;
+      }).join('\n');
+
+      prompt =
+        'You are a patient, warm trading mentor reviewing the recent decisions of Dr Francois Coetzee, ' +
+        'a 63-year-old doctor who is LEARNING to trade for the first time. ' +
+        'He has been recording his trade reasoning in a Decision Journal. ' +
+        'Your job is NOT to evaluate whether his trades made money — that is not the point. ' +
+        'Your job is to look at the PATTERNS in HOW he thinks and makes decisions, ' +
+        'and help him become more self-aware and disciplined as a learner. ' +
+        '\n\n' +
+        'Here are his last 14 days of journal entries:\n\n' +
+        entryLines +
+        '\n\n' +
+        'Write a warm, personal review in plain English. Structure it as follows:\n' +
+        '(1) **What I notice** — 2-3 observations about patterns in his reasoning. ' +
+        'Be specific: quote his actual words when relevant. Patterns to look for: ' +
+        'Does he buy on fear or on analysis? Does he give reasons or just act? ' +
+        'Does he follow the autopilot logic or override it? Does he sell too early or too late? ' +
+        'Does he repeat the same reasoning? Is there emotional language ("I think it will rocket")?\n' +
+        '(2) **One strength to build on** — something he is already doing well in his decision-making.\n' +
+        '(3) **One thing to try differently** — one specific, concrete habit change for his next trade.\n' +
+        '(4) **A question to sit with** — one open-ended question about his trading psychology ' +
+        'that only he can answer, designed to deepen his self-awareness.\n' +
+        '\n' +
+        'Keep the tone warm and honest — like a good teacher who sees both strengths and blind spots. ' +
+        'No jargon. No P/L commentary. This is about the quality of his thinking, not the results.\n' +
+        'End with: "Learning tool only — speak to your financial advisor before any real money decisions."';
+
+    } else if (kind === 'analyse') {
       prompt =
         'You are a patient teacher writing to Dr Francois Coetzee, a 63-year-old doctor learning to read stock charts for the FIRST TIME. ' +
         'Treat him as a complete novice. Assume he does NOT know what MA50, MA200, RSI, "pulled back", "constructive", "momentum", or "consolidation" mean. ' +
@@ -145,7 +198,7 @@ export async function askClaude(kind) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model:      'claude-sonnet-4-6',
-        max_tokens: 600,
+        max_tokens: kind === 'journal-review' ? 900 : 600,
         messages:   [{ role: 'user', content: prompt }]
       })
     });
