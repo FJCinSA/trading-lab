@@ -39,8 +39,8 @@ Each pillar must be **fully shipped to production** (committed to GitHub, deploy
 | # | Pillar | Status | Approx build cost |
 |---|---|---|---|
 | 1 | **Live Yahoo Finance data foundation** | ✅ **SHIPPED 29 April 2026** | 1.5–2 hours (delivered) |
-| 2 | **Replay Mode** — pick any historical date, advance day-by-day, decisions on incomplete information | Next pillar | 4–6 hours |
-| 3 | **Historical Analog Engine** — for any setup, scan history for matches, show outcome distribution and analog dates | Blocked by 2 | 4–5 hours |
+| 2 | **Replay Mode (Phase 1 MVP)** — pick any historical date, advance day-by-day, decisions on incomplete information | ✅ **SHIPPED 30 April 2026** | Delivered |
+| 3 | **Historical Analog Engine** — for any setup, scan history for matches, show outcome distribution and analog dates | Next pillar | 4–5 hours |
 | 4 | **Comparison / overlay mode** — two instruments on one chart, normalised | Available any time | 2–3 hours |
 | 5 | **Decision Journal with weekly AI review** | Can be built parallel to others | 3–4 hours |
 | 6 | **Famous Crashes case study library** — META 2022, COVID 2020, GFC 2008, 1987, dotcom 2000, Aug 2024 yen carry, USDZAR Dec 2015 | Blocked by 2+3 | 1–2 hours per scenario |
@@ -140,6 +140,7 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 30 Apr 2026 | Pillar 2 Phase 1 (Replay Mode MVP) shipped at ~08:20 SAST | Date picker + step day-by-day forward/back + Return to live + REPLAY pill in header + keyboard shortcuts. Chart, indicators, autopilot, AI analysis, and historical edge tables all see only data up to the replay date. Verified: TDY chart correctly truncated to 2025-09-19, indicators recomputed, pattern markers firing on real truncated history. |
 | 29 Apr 2026 | Pillar 1 (Yahoo Finance data) shipped at 13:16 SAST | Cloudflare Worker `yahoo-proxy.fjcspeel.workers.dev` proxies `query1.finance.yahoo.com`. Lab integrates with `Refresh prices` button. Header pill flips SYNTHETIC → LIVE on success. Real-data lessons (volume spikes on actual high-volume days, real pattern detection, real RSI levels) now teaching for the first time. |
 | 28 Apr 2026 | "Prediction" features will be implemented as Historical Analog Engine, not LLM forecasting or ML models | LLM hallucinations and ML black boxes both contradict the lab's honest-teaching ethos. Historical analog matching is statistically sound and educationally superior. |
 | 28 Apr 2026 | Build order locked: Yahoo data → Replay → Analog Engine → Overlay → Journal → Cases → Curriculum | Each pillar depends on the previous. Yahoo data is the substrate everything else needs. Replay before Analog because Analog needs the replay context to teach. |
