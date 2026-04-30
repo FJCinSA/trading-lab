@@ -414,6 +414,18 @@ async function jumpToCrash(scenario) {
     return;
   }
 
+  // Exit any active replay first — enterReplay() bails silently if replay is already
+  // active, which would leave the chart showing the old session instead of the crash.
+  // Restoring full data here also ensures jumpToAnalog() uses freshly fetched data
+  // (not the stale _replayBackup) when building the per-ticker index map.
+  if (state.replay.active) {
+    if (state._replayBackup) state.data = state._replayBackup;
+    state._replayBackup = null;
+    state.replay.active = false;
+    state.replay.idx    = {};
+    updateReplayUI();
+  }
+
   // Disengage autopilot if it is running — it should not trade during a study
   if (isAutopilotEngaged()) pilotDisengage('Starting crash case study');
 
@@ -436,15 +448,32 @@ async function jumpToCrash(scenario) {
 
   if (loadEl) loadEl.style.display = 'none';
 
-  // Verify the data actually covers the scenario start date
-  const candles = state.data[scenario.ticker];
+  // Verify the data actually covers the scenario start date with enough prior history
+  const candles  = state.data[scenario.ticker];
   const startIdx = candles.findIndex(c => c.d >= scenario.startDate);
+
+  if (startIdx < 0) {
+    // Data ends before the crash date — should never happen for current tickers,
+    // but catches e.g. a newly-listed ETF or a Yahoo data gap.
+    const latest = candles.length > 0 ? candles[candles.length - 1].d : 'unknown';
+    alert(
+      'No data found at or after ' + scenario.startDate + ' for ' + scenario.ticker + '.\n\n' +
+      'Latest available date: ' + latest + '.\n\n' +
+      'The scenario start date may be in the future, or Yahoo Finance may not have ' +
+      'this ticker\'s data that far.'
+    );
+    return;
+  }
+
   if (startIdx < 50) {
+    // Not enough candles before the crash date for indicators to work.
     const earliest = candles.length > 0 ? candles[0].d : 'unknown';
     alert(
       'Not enough historical data for ' + scenario.name + '.\n\n' +
       'Yahoo Finance data for ' + scenario.ticker + ' starts on ' + earliest + '.\n' +
-      'Need data covering ' + scenario.startDate + ' with at least 50 prior candles.'
+      'Crash start date ' + scenario.startDate + ' is only ' + startIdx + ' candles in — ' +
+      'need at least 50 prior candles for the indicators to work.\n\n' +
+      'Try a later start date for this scenario.'
     );
     return;
   }
