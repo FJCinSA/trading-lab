@@ -41,8 +41,8 @@ Each pillar must be **fully shipped to production** (committed to GitHub, deploy
 | 1 | **Live Yahoo Finance data foundation** | ✅ **SHIPPED 29 April 2026** | 1.5–2 hours (delivered) |
 | 2 | **Replay Mode (Phase 1 MVP)** — pick any historical date, advance day-by-day, decisions on incomplete information | ✅ **SHIPPED 30 April 2026** | Delivered |
 | 3 | **Historical Analog Engine** — for any setup, scan history for matches, show outcome distribution and analog dates | ✅ **SHIPPED 30 April 2026** | Delivered |
-| 4 | **Comparison / overlay mode** — two instruments on one chart, normalised | Available any time | 2–3 hours |
-| 5 | **Decision Journal with weekly AI review** | Can be built parallel to others | 3–4 hours |
+| 4 | **Decision Journal with weekly AI review** | Available any time — promoted ahead of Overlay | 3–4 hours |
+| 5 | **Comparison / overlay mode** — two instruments on one chart, normalised | Available any time | 2–3 hours |
 | 6 | **Famous Crashes case study library** — META 2022, COVID 2020, GFC 2008, 1987, dotcom 2000, Aug 2024 yen carry, USDZAR Dec 2015 | Blocked by 2+3 | 1–2 hours per scenario |
 | 7 | **Curriculum modules** — structured lessons with progress tracking | Blocked by all of the above | 2–3 hours per module |
 
@@ -140,6 +140,9 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 30 Apr 2026 | Decision Journal (Pillar 4) promoted ahead of Comparison/Overlay (now Pillar 5) | Journal is core to the teaching mission — it is where reflection lives. Overlay is a convenience feature. The lab's thesis demands the journal exist before analysis tools multiply. |
+| 30 Apr 2026 | Pillar 6 (Famous Crashes) will require bundled historical JSON data | Yahoo Finance's 2-year limit cannot fetch 2008, 2000, or 1987. Static JSON crash datasets must be bundled in the repo before that pillar begins. |
+| 30 Apr 2026 | File modularisation decision deferred but flagged | trading-lab.html is ~2350 lines. A split plan (ES modules or build step) is needed before Pillar 6 to avoid an unmaintainable monolith. |
 | 30 Apr 2026 | Pillar 3 (Historical Analog Engine) shipped | Bucket today's setup into trend (above/below MA200), RSI bucket, volume regime. Scan all 4 tickers' history for matches. Compute 30-day forward returns. Display: count, median, win rate, range, top-12 clickable analog list. Verified: 26 matches found for "above MA200 + RSI>60 + normal volume" with median +0.1%, win rate 54% — honest distribution showing the setup is essentially noise. Click any analog row to jump replay there. |
 | 30 Apr 2026 | Pillar 2 Phase 1 (Replay Mode MVP) shipped at ~08:20 SAST | Date picker + step day-by-day forward/back + Return to live + REPLAY pill in header + keyboard shortcuts. Chart, indicators, autopilot, AI analysis, and historical edge tables all see only data up to the replay date. Verified: TDY chart correctly truncated to 2025-09-19, indicators recomputed, pattern markers firing on real truncated history. |
 | 29 Apr 2026 | Pillar 1 (Yahoo Finance data) shipped at 13:16 SAST | Cloudflare Worker `yahoo-proxy.fjcspeel.workers.dev` proxies `query1.finance.yahoo.com`. Lab integrates with `Refresh prices` button. Header pill flips SYNTHETIC → LIVE on success. Real-data lessons (volume spikes on actual high-volume days, real pattern detection, real RSI levels) now teaching for the first time. |
@@ -155,8 +158,10 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 ## Outstanding to-do (prioritised)
 
 1. **Pillars 1–3 all shipped 29–30 April 2026.** Docs updated and committed — repo is current.
-2. **Next: Pillar 4 — Comparison / overlay mode.** Two instruments on one normalised chart. Estimated 2–3 hours, available any time.
-3. NWU Engineering email for CapnoSafe — separate project, do not let trading-lab consume that bandwidth.
+2. **Next: Pillar 4 — Decision Journal.** Core to the lab's teaching mission. Promoted ahead of Overlay. Estimated 3–4 hours.
+3. **Before Pillar 5 (Overlay) or Pillar 6 (Crashes): plan file modularisation.** trading-lab.html is ~2350 lines. By Pillar 6 it will approach 4000. A decision is needed — either ES module refactor or a simple build step. Do not start Pillar 6 in a single HTML file.
+4. **Before Pillar 6 (Famous Crashes): decide on data source.** Yahoo Finance's 2-year limit means 2008 and 1987 are not fetchable. Decision needed: bundle crash data as static JSON files in the repo before that build begins.
+5. NWU Engineering email for CapnoSafe — separate project, do not let trading-lab consume that bandwidth.
 
 ---
 

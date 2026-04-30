@@ -198,6 +198,9 @@
   <button class="btn" id="save-yahoo">Save</button>
   <button class="btn gold" id="refresh-yahoo" disabled data-tip="Pull the latest 2 years of daily candles for TDY, TSLA, SOL.JO and MNST from Yahoo Finance via your proxy. Replaces the synthetic data engine with real market data.">Refresh prices</button>
   <span id="data-status">synthetic data</span>
+  <span style="margin-left:8px" data-tip="USD/ZAR exchange rate used to convert TDY, TSLA and MNST prices into your ZAR paper portfolio. Update this when the rate moves — stale rate means stale P&amp;L.">USD/ZAR:</span>
+  <input id="fx-rate" type="number" step="0.01" min="1" style="width:72px;padding:4px 8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:12px" />
+  <button class="btn" id="save-fx">Save</button>
 </div>
 
 <div class="config-bar" id="replay-bar">
@@ -407,14 +410,13 @@ const TICKERS = [
   { sym:'MNST', name:'Monster Beverage',      exch:'NASDAQ', ccy:'USD', yahoo:'MNST',   start:58,  vol:0.020, drift: 0.0008 }
 ];
 
-const FX_USD_ZAR = 18.50;
-
 const LS_PORTFOLIO   = 'fjc-trading-portfolio-v1';
 const LS_ALERTS      = 'fjc-trading-alerts-v1';
 const LS_PROXY       = 'fjc-trading-proxy-v1';
 const LS_SR          = 'fjc-trading-sr-v1';
 const LS_PILOT       = 'fjc-trading-pilot-v1';
 const LS_YAHOO_PROXY = 'fjc-trading-yahoo-proxy-v1';
+const LS_FX          = 'fjc-trading-fx-v1';
 
 let state = {
   active: 'TDY',
@@ -427,6 +429,7 @@ let state = {
   pilot:     loadPilot(),
   proxy:     localStorage.getItem(LS_PROXY) || '',
   yahooProxy: localStorage.getItem(LS_YAHOO_PROXY) || '',
+  fxUsdZar:   parseFloat(localStorage.getItem(LS_FX)) || 18.50,
   dataMode:   'synthetic',   // 'synthetic' | 'live'
   liveDataAt: null,           // timestamp of most recent successful Yahoo fetch
   // ---- Replay Mode (Pillar 2 MVP) ----
@@ -572,7 +575,7 @@ function defaultPilot(){ return { cash:100000, positions:{}, log:[], lastTradeDa
 function savePilot(){ localStorage.setItem(LS_PILOT, JSON.stringify(state.pilot)); }
 
 function tickerCcy(sym){ return TICKERS.find(t=>t.sym===sym).ccy; }
-function priceToZar(sym, price){ return tickerCcy(sym) === 'USD' ? price * FX_USD_ZAR : price; }
+function priceToZar(sym, price){ return tickerCcy(sym) === 'USD' ? price * state.fxUsdZar : price; }
 function dayDiff(d1, d2){ return Math.abs((new Date(d1) - new Date(d2)) / (1000*60*60*24)); }
 
 function marketStatus(){
@@ -788,6 +791,18 @@ function bindControls(){
   };
   document.getElementById('refresh-yahoo').onclick = refreshAllFromYahoo;
   updateYahooStatus();
+
+  // FX rate field
+  const fxEl = document.getElementById('fx-rate');
+  if (fxEl) fxEl.value = state.fxUsdZar.toFixed(2);
+  document.getElementById('save-fx').onclick = () => {
+    const v = parseFloat(document.getElementById('fx-rate').value);
+    if (!isNaN(v) && v > 1){
+      state.fxUsdZar = v;
+      localStorage.setItem(LS_FX, v.toFixed(2));
+      render();
+    }
+  };
 }
 function updateProxyStatus(){
   const s = document.getElementById('proxy-status');
@@ -808,7 +823,7 @@ function updateYahooStatus(){
     } else {
       status.style.color = 'var(--muted)';
       status.textContent = 'synthetic data — click Refresh prices for live';
-      if (pill){ pill.textContent = 'SYNTHETIC DATA'; pill.style.color = 'var(--muted)'; }
+      if (pill){ pill.textContent = '⚠ SYNTHETIC'; pill.style.color = 'var(--gold)'; }
     }
   } else {
     btn.disabled = true;
@@ -2157,6 +2172,9 @@ async function askClaude(kind){
 window.addEventListener('resize', () => render());
 init();
 setupReplayMode();
+// If a Yahoo proxy URL was saved in a previous session, load live data immediately on startup.
+// Falls back silently to synthetic data if the fetch fails.
+if (state.yahooProxy) refreshAllFromYahoo();
 
 //============================================================
 // REPLAY MODE (Pillar 2 MVP)
