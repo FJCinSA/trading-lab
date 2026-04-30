@@ -38,9 +38,45 @@ export function initReplay(renderFn, yahooStatusFn) {
 
 export function setupReplayMode() {
   document.getElementById('btn-replay-start').onclick = startReplayFromDate;
-  document.getElementById('btn-replay-back').onclick  = () => stepReplay(-1);
-  document.getElementById('btn-replay-fwd').onclick   = () => stepReplay(1);
   document.getElementById('btn-replay-live').onclick  = exitReplay;
+
+  // Press-and-hold repeat for ◄ / ► buttons.
+  // Single tap = one step. Hold = continuous scroll starting after 350 ms,
+  // then accelerating: starts at 120 ms/step → speeds up to 40 ms/step.
+  function holdRepeat(btn, delta) {
+    let delayTimer   = null;
+    let repeatTimer  = null;
+    let stepInterval = 120;   // ms between steps (shrinks over time)
+
+    function fire() {
+      if (!btn.disabled) stepReplay(delta);
+    }
+
+    function scheduleNext() {
+      stepInterval = Math.max(40, stepInterval - 8);   // accelerate up to 25 steps/s
+      repeatTimer  = setTimeout(() => { fire(); scheduleNext(); }, stepInterval);
+    }
+
+    function start(e) {
+      e.preventDefault();
+      stepInterval = 120;       // reset speed on each new press
+      fire();                   // immediate first step
+      delayTimer = setTimeout(() => { fire(); scheduleNext(); }, 350); // hold threshold
+    }
+
+    function stop() {
+      clearTimeout(delayTimer);  delayTimer  = null;
+      clearTimeout(repeatTimer); repeatTimer = null;
+    }
+
+    btn.addEventListener('pointerdown',   start);
+    btn.addEventListener('pointerup',     stop);
+    btn.addEventListener('pointercancel', stop);
+    btn.addEventListener('pointerleave',  stop);
+  }
+
+  holdRepeat(document.getElementById('btn-replay-back'), -1);
+  holdRepeat(document.getElementById('btn-replay-fwd'),   1);
 
   // Default the date input to ~6 months ago
   const six    = new Date();
@@ -129,6 +165,7 @@ export function exitReplay() {
   state._replayBackup = null;
   state.replay.active = false;
   state.replay.idx    = {};
+  state.viewOffset    = 0;   // reset pan on exit
 
   state.historicalEdge = computeHistoricalEdge();
 
@@ -139,6 +176,9 @@ export function exitReplay() {
 
 export function stepReplay(deltaDays) {
   if (!state.replay.active || !state._replayBackup) return;
+
+  // Reset pan so the chart always snaps back to the newly revealed candle
+  state.viewOffset = 0;
 
   for (const t of TICKERS) {
     const full = state._replayBackup[t.sym] || [];

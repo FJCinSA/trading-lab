@@ -16,6 +16,13 @@ import { detectPatterns, detectActions } from './patterns.js';
 // Injected render callback — set by initChart(), never null after boot
 let _render = null;
 
+// Module-level drag state — persists across render() calls so drag isn't
+// broken by intermediate redraws triggered during a pointer-move.
+let _dragActive   = false;
+let _dragStartX   = 0;
+let _dragStartOff = 0;
+let _dragMoved    = false;
+
 // Last drawn chart geometry — used by showCrosshair() and S/R click
 let chartGeom = null;
 
@@ -285,28 +292,90 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
   // Save geometry for crosshair + SR click
   chartGeom = { padL, padT, padR, padB, w, h, lo, hi, cw, candles, W, H, ma50, ma200, rsiArr };
 
-  // Crosshair hover
-  cv.onmousemove = (e) => {
-    const rect = cv.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (cv.width  / rect.width);
-    const y = (e.clientY - rect.top)  * (cv.height / rect.height);
-    showCrosshair(x, y);
-  };
-  cv.onmouseleave = () => {
-    document.getElementById('ohlc').style.display = 'none';
-    if (_render) _render();
+  // Set grab cursor — shows the user the chart is draggable
+  cv.style.cursor = 'grab';
+
+  // ── Pointer events: drag-to-pan (Google Maps style) ──────────────
+  cv.onpointerdown = (e) => {
+    _dragActive   = true;
+    _dragStartX   = e.clientX;
+    _dragStartOff = state.viewOffset || 0;
+    _dragMoved    = false;
+    cv.setPointerCapture(e.pointerId);  // keep events even if cursor leaves canvas
+    cv.style.cursor = 'grabbing';
   };
 
-  // S/R line placement on click
-  cv.onclick = (e) => {
-    if (!state.indicators.sr) return;
-    const rect  = cv.getBoundingClientRect();
-    const y     = (e.clientY - rect.top) * (cv.height / rect.height);
-    const price = chartGeom.hi - (chartGeom.hi - chartGeom.lo) * ((y - chartGeom.padT) / chartGeom.h);
-    if (price > 0) {
-      if (!state.sr[state.active]) state.sr[state.active] = [];
-      state.sr[state.active].push(+price.toFixed(2));
-      saveSR();
+  cv.onpointermove = (e) => {
+    if (!_dragActive) {
+      // Not dragging — show crosshair
+      const rect = cv.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (cv.width  / rect.width);
+      const y = (e.clientY - rect.top)  * (cv.height / rect.height);
+      showCrosshair(x, y);
+      return;
+    }
+    // Dragging — pan the chart
+    const deltaX = e.clientX - _dragStartX;
+    if (Math.abs(deltaX) > 4) _dragMoved = true;
+    if (_dragMoved && chartGeom) {
+      // Negative deltaX (drag left) = move forward in time (reduce offset)
+      // Positive deltaX (drag right) = move back in time (increase offset)
+      const deltaCandlesCont = -deltaX / chartGeom.cw;
+      const newOff = Math.round(_dragStartOff + deltaCandlesCont);
+      const all    = state.data[state.active] || [];
+      const maxOff = Math.max(0, all.length - state.timeframe);
+      state.viewOffset = Math.max(0, Math.min(maxOff, newOff));
+      if (_render) _render();
+    }
+  };
+
+  cv.onpointerup = (e) => {
+    cv.style.cursor = 'grab';
+    const wasDrag = _dragMoved;
+    _dragActive = false;
+    _dragMoved  = false;
+    // If the pointer barely moved → treat as a click (S/R placement)
+    if (!wasDrag && state.indicators.sr && chartGeom) {
+      const rect  = cv.getBoundingClientRect();
+      const y     = (e.clientY - rect.top) * (cv.height / rect.height);
+      const price = chartGeom.hi - (chartGeom.hi - chartGeom.lo) * ((y - chartGeom.padT) / chartGeom.h);
+      if (price > 0) {
+        if (!state.sr[state.active]) state.sr[state.active] = [];
+        state.sr[state.active].push(+price.toFixed(2));
+        saveSR();
+        if (_render) _render();
+      }
+    }
+  };
+
+  cv.onpointerleave = () => {
+    if (!_dragActive) {
+      document.getElementById('ohlc').style.display = 'none';
+      cv.style.cursor = 'grab';
+      if (_render) _render();
+    }
+  };
+
+  cv.onpointercancel = () => {
+    _dragActive = false;
+    _dragMoved  = false;
+    cv.style.cursor = 'grab';
+  };
+
+  // ── Scroll wheel: zoom in / out ───────────────────────────────────
+  cv.onwheel = (e) => {
+    e.preventDefault();
+    const TF_STEPS = [30, 90, 180, 365, 730];
+    const curIdx   = TF_STEPS.findIndex(v => v >= state.timeframe);
+    const idx      = curIdx < 0 ? TF_STEPS.length - 1 : curIdx;
+    const newIdx   = e.deltaY > 0
+      ? Math.min(TF_STEPS.length - 1, idx + 1)   // scroll down = zoom out
+      : Math.max(0, idx - 1);                     // scroll up   = zoom in
+    if (newIdx !== idx) {
+      state.timeframe = TF_STEPS[newIdx];
+      document.querySelectorAll('#tf button').forEach(b => {
+        b.classList.toggle('on', +b.dataset.tf === state.timeframe);
+      });
       if (_render) _render();
     }
   };

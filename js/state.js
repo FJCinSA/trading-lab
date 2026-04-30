@@ -86,7 +86,12 @@ export const state = {
 
   // Active crash case study (Pillar 6) — set by jumpToCrash(), cleared on panel close
   // Used by chart.js to draw the crash zone overlay shading
-  crashStudy: null
+  crashStudy: null,
+
+  // Pan offset — how many candles back from the most recent to anchor the right edge.
+  // 0 = live (right edge = latest candle). Positive = panned back in time.
+  // Reset to 0 on ticker switch, replay step, and exit-replay.
+  viewOffset: 0
 };
 
 // ------------------------------------------------------------------

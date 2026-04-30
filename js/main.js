@@ -45,22 +45,33 @@ export function render() {
   const t = TICKERS.find(x => x.sym === state.active);
   document.getElementById('lbl-ticker').textContent = t.sym;
 
-  const all        = state.data[state.active];
-  const visible    = all.slice(-state.timeframe);
-  const allCloses  = all.map(c => c.c);
-  const sliceStart = all.length - visible.length;
+  const all    = state.data[state.active];
+  const allLen = all.length;
 
-  // Compute full-series indicators then slice to visible window
+  // Pan offset — clamp to valid range so we never go before the first candle
+  const maxOff     = Math.max(0, allLen - state.timeframe);
+  const off        = Math.max(0, Math.min(state.viewOffset || 0, maxOff));
+  state.viewOffset = off;                         // write back clamped value
+
+  // Compute the visible window respecting the pan offset
+  const visStart   = Math.max(0, allLen - state.timeframe - off);
+  const visEnd     = off > 0 ? allLen - off : allLen;
+  const visible    = all.slice(visStart, visEnd);
+  const sliceStart = visStart;
+
+  const allCloses  = all.map(c => c.c);
+
+  // Compute full-series indicators then slice to the visible window
   const ma50full  = sma(allCloses, 50);
   const ma200full = sma(allCloses, 200);
   const bbFull    = bollinger(allCloses, 20, 2);
   const rsiFull   = rsi(allCloses, 14);
 
-  const ma50  = ma50full .slice(sliceStart);
-  const ma200 = ma200full.slice(sliceStart);
-  const bbUp  = bbFull.up.slice(sliceStart);
-  const bbDn  = bbFull.dn.slice(sliceStart);
-  const rsiArr = rsiFull .slice(sliceStart);
+  const ma50   = ma50full .slice(sliceStart, sliceStart + visible.length);
+  const ma200  = ma200full.slice(sliceStart, sliceStart + visible.length);
+  const bbUp   = bbFull.up.slice(sliceStart, sliceStart + visible.length);
+  const bbDn   = bbFull.dn.slice(sliceStart, sliceStart + visible.length);
+  const rsiArr = rsiFull  .slice(sliceStart, sliceStart + visible.length);
 
   drawCandles(visible, ma50, ma200, bbUp, bbDn, rsiArr);
 
@@ -157,7 +168,8 @@ function buildTabs() {
     b.className  = 'tab' + (state.active === t.sym ? ' active' : '');
     b.textContent = t.sym + '  ' + t.name;
     b.onclick = () => {
-      state.active = t.sym;
+      state.active     = t.sym;
+      state.viewOffset = 0;   // reset pan when switching tickers
       render();
       buildTabs();
       updateReplayUI();
@@ -180,6 +192,24 @@ function bindControls() {
       render();
     };
   });
+
+  // ---- Zoom buttons (also wired to scroll wheel in chart.js) ----
+  const TF_STEPS = [30, 90, 180, 365, 730];
+  function _setTf(newTf) {
+    state.timeframe = newTf;
+    document.querySelectorAll('#tf button').forEach(b => {
+      b.classList.toggle('on', +b.dataset.tf === newTf);
+    });
+    render();
+  }
+  document.getElementById('btn-zoom-in').onclick = () => {
+    const idx = TF_STEPS.indexOf(state.timeframe);
+    if (idx > 0) _setTf(TF_STEPS[idx - 1]);
+  };
+  document.getElementById('btn-zoom-out').onclick = () => {
+    const idx = TF_STEPS.indexOf(state.timeframe);
+    if (idx < TF_STEPS.length - 1) _setTf(TF_STEPS[idx + 1]);
+  };
 
   // ---- Indicator toggles ----
   document.querySelectorAll('.toggle[data-ind]').forEach(b => {
@@ -497,7 +527,7 @@ async function jumpToCrash(scenario) {
   const calDays = scenario.endDate
     ? Math.round((new Date(scenario.endDate) - new Date(scenario.startDate)) / 86400000)
     : 90;
-  const newTf = calDays > 400 ? 500        // 2Y covers very long crashes (Dot-com)
+  const newTf = calDays > 400 ? 730        // 2Y covers very long crashes (Dot-com)
               : calDays > 200 ? 365        // 1Y covers medium crashes (GFC, META)
               : calDays >  90 ? 180        // 180D covers USDZAR (~8 months)
               :                  90;       // 90D covers short crashes (COVID, Yen Carry)
@@ -505,6 +535,9 @@ async function jumpToCrash(scenario) {
   document.querySelectorAll('#tf button').forEach(b => {
     b.classList.toggle('on', +b.dataset.tf === newTf);
   });
+
+  // Reset pan so the crash opens at the right position
+  state.viewOffset = 0;
 
   // Activate crash study state so chart.js draws the crash zone overlay
   state.crashStudy = scenario;
