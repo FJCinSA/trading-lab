@@ -156,6 +156,12 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
       ctx.fillStyle = 'rgba(200, 40, 40, 0.30)';
       ctx.fillRect(czStartX, padT, czEndX - czStartX, h);
 
+      // Recovery zone (after trough) — subtle green tint shows "crash is over"
+      if (endDate && czEndX < padL + w) {
+        ctx.fillStyle = 'rgba(38, 169, 108, 0.10)';
+        ctx.fillRect(czEndX, padT, padL + w - czEndX, h);
+      }
+
       // Onset line — only draw if onset is actually on-screen (not at left edge)
       if (czStartX > padL + 2) {
         ctx.strokeStyle = 'rgba(235, 75, 75, 0.95)';
@@ -180,6 +186,32 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
         ctx.fill();
         ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.fillText(lbl, lx + 5, ly + lh / 2);
+      }
+
+      // Bottom / trough marker — green line + pill at endDate if it's on screen
+      if (endDate && czEndX > padL + 2 && czEndX < padL + w - 2) {
+        ctx.strokeStyle = 'rgba(38, 169, 108, 0.90)';
+        ctx.lineWidth   = 2;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(czEndX, padT);
+        ctx.lineTo(czEndX, padT + h);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = 'bold 11px Inter,Arial';
+        const lbl2 = '▲ BOTTOM';
+        const lw2  = ctx.measureText(lbl2).width + 10;
+        const lh2  = 16;
+        // Place below onset label (padT + 24) so they don't overlap when both visible
+        const lx2  = (czEndX + 6 + lw2 < padL + w) ? czEndX + 6 : czEndX - lw2 - 6;
+        const ly2  = padT + 24;
+        ctx.fillStyle = 'rgba(28, 130, 80, 0.92)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(lx2, ly2, lw2, lh2, 3); else ctx.rect(lx2, ly2, lw2, lh2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(lbl2, lx2 + 5, ly2 + lh2 / 2);
       }
 
     } else if (lastDate && lastDate < startDate) {
