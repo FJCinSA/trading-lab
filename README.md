@@ -116,9 +116,9 @@ The project follows a 7-pillar build plan. See [ROADMAP.md](ROADMAP.md) for the 
 | # | Pillar | Status |
 |---|---|---|
 | 1 | Live Yahoo Finance data foundation | **Shipped** |
-| 2 | Replay Mode (pick historical date, step day-by-day) | Next |
-| 3 | Historical Analog Engine (find similar setups, show outcome distributions) | Planned |
-| 4 | Comparison / overlay mode | Planned |
+| 2 | Replay Mode (pick historical date, step day-by-day) | **Shipped** |
+| 3 | Historical Analog Engine (find similar setups, show outcome distributions) | **Shipped** |
+| 4 | Comparison / overlay mode | **Next** |
 | 5 | Decision Journal with weekly AI review | Planned |
 | 6 | Famous Crashes case study library | Planned |
 | 7 | Curriculum modules | Planned |

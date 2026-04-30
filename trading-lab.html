@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FJC Lab">
-<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<!-- apple-touch-icon: add a 180×180 PNG here if you want a custom iOS home screen icon -->
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <style>
   :root{
@@ -396,7 +396,8 @@
 
 <script>
 //============================================================
-// FJC TRADING LAB - V3 - Adds AI Pilot mode
+// FJC TRADING LAB
+// Pillars shipped: 1 (Live data) | 2 (Replay Mode) | 3 (Historical Analogs)
 //============================================================
 
 const TICKERS = [
@@ -1802,9 +1803,6 @@ function renderPilot(){
   }
 }
 
-//------------------------------------------------------------
-// AI hooks
-//------------------------------------------------------------
 //============================================================
 // HISTORICAL ANALOG ENGINE (Pillar 3)
 //============================================================
@@ -2009,20 +2007,12 @@ function jumpToAnalog(ticker, dateStr){
   const idxMap = {};
   for (const t of TICKERS){
     const full = state.data[t.sym] || [];
-    if (t.sym === ticker){
-      let foundIdx = -1;
-      for (let i = full.length - 1; i >= 0; i--){
-        if (full[i].d <= dateStr){ foundIdx = i; break; }
-      }
-      idxMap[t.sym] = Math.max(50, foundIdx >= 0 ? foundIdx : full.length - 1);
-    } else {
-      // For other tickers, replay to the same calendar date (or last available before)
-      let foundIdx = -1;
-      for (let i = full.length - 1; i >= 0; i--){
-        if (full[i].d <= dateStr){ foundIdx = i; break; }
-      }
-      idxMap[t.sym] = Math.max(50, foundIdx >= 0 ? foundIdx : full.length - 1);
+    // Find the latest candle on or before dateStr (same lookup for all tickers)
+    let foundIdx = -1;
+    for (let i = full.length - 1; i >= 0; i--){
+      if (full[i].d <= dateStr){ foundIdx = i; break; }
     }
+    idxMap[t.sym] = Math.max(50, foundIdx >= 0 ? foundIdx : full.length - 1);
   }
   enterReplay(idxMap);
   // Scroll the chart into view so the user sees what they jumped to
@@ -2243,9 +2233,9 @@ function enterReplay(idx_per_ticker){
   const refreshBtn = document.getElementById('refresh-yahoo');
   if (refreshBtn) refreshBtn.disabled = true;
   // Recompute historical-edge stats on the truncated data so the right-panel tables match what the user can see
-  if (typeof computeHistoricalEdge === 'function') historicalEdge = computeHistoricalEdge();
+  historicalEdge = computeHistoricalEdge();
   render();
-  if (typeof renderHistoricalEdge === 'function') renderHistoricalEdge();
+  renderHistoricalEdge();
   updateReplayUI();
 }
 
@@ -2255,9 +2245,9 @@ function exitReplay(){
   state._replayBackup = null;
   state.replay.active = false;
   state.replay.idx = {};
-  if (typeof computeHistoricalEdge === 'function') historicalEdge = computeHistoricalEdge();
+  historicalEdge = computeHistoricalEdge();
   render();
-  if (typeof renderHistoricalEdge === 'function') renderHistoricalEdge();
+  renderHistoricalEdge();
   updateReplayUI();
 }
 
@@ -2274,9 +2264,9 @@ function stepReplay(deltaDays){
     sliced[t.sym] = state._replayBackup[t.sym].slice(0, state.replay.idx[t.sym] + 1);
   }
   state.data = sliced;
-  if (typeof computeHistoricalEdge === 'function') historicalEdge = computeHistoricalEdge();
+  historicalEdge = computeHistoricalEdge();
   render();
-  if (typeof renderHistoricalEdge === 'function') renderHistoricalEdge();
+  renderHistoricalEdge();
   updateReplayUI();
 }
 
@@ -2318,7 +2308,7 @@ function updateReplayUI(){
     const refreshBtn = document.getElementById('refresh-yahoo');
     if (refreshBtn) refreshBtn.disabled = !state.yahooProxy;
     // Pill default state is set by updateYahooStatus
-    if (typeof updateYahooStatus === 'function') updateYahooStatus();
+    updateYahooStatus();
   }
 }
 

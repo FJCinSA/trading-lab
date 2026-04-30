@@ -154,11 +154,9 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 
 ## Outstanding to-do (prioritised)
 
-1. **Today (28 Apr 2026):** Finish quick wins — fix tooltip clipping CSS, track .bat launcher and Worker source in git, then begin Pillar 1 (Yahoo Finance data).
-2. **Pillar 1 — Yahoo data foundation:** build a second Cloudflare Worker proxying `query1.finance.yahoo.com`, integrate into the lab as a "Live data" toggle, fall back to synthetic on error. Verify with TDY, TSLA, SOL.JO, MNST, USDZAR=X.
-3. **Then Pillar 2 — Replay Mode.** Will be a separate session.
-4. NWU Engineering email for CapnoSafe — separate project, do not let trading-lab consume that bandwidth.
-5. Install PWA on Samsung tablet (30 seconds — outstanding from quick wins).
+1. **Pillars 1–3 all shipped 29–30 April 2026.** Docs updated and committed — repo is current.
+2. **Next: Pillar 4 — Comparison / overlay mode.** Two instruments on one normalised chart. Estimated 2–3 hours, available any time.
+3. NWU Engineering email for CapnoSafe — separate project, do not let trading-lab consume that bandwidth.
 
 ---
 
