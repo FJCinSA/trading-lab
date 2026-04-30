@@ -33,6 +33,8 @@ export const CRASH_SCENARIOS = [
     magnitude: '-57%',
     duration: '17 months',
     startDate: '2007-10-01',
+    fetchStart: '2005-01-01',   // 3 years of warmup for MA200
+    fetchEnd:   '2011-12-31',   // covers crash + early recovery
     context: [
       "It's October 2007. US house prices have been falling for a year but the stock market just hit an all-time high. Everyone knows there are problems in the subprime mortgage market — but the consensus is that the financial system can absorb it.",
       "Lehman Brothers is still standing. Bear Stearns is still standing. The Federal Reserve has just cut rates. Most analysts are calling for a \"soft landing.\" The S&P 500 closes at 1,576.",
@@ -48,6 +50,8 @@ export const CRASH_SCENARIOS = [
     magnitude: '-83%',
     duration: '31 months',
     startDate: '2000-01-03',
+    fetchStart: null,           // QQQ started Mar 1999 — fetch from inception
+    fetchEnd:   '2004-12-31',   // covers full crash (Oct 2002 trough) + recovery
     context: [
       "It's January 2000. The internet has changed everything. Companies with no revenue and no profits are worth billions. Every cab driver has stock tips. The Nasdaq has tripled in two years.",
       "Amazon, Webvan, pets.com — they're all going to be trillion-dollar companies. The \"new economy\" has abolished old valuation rules. The QQQ Nasdaq 100 ETF has just made its all-time high at $118.",
@@ -63,6 +67,8 @@ export const CRASH_SCENARIOS = [
     magnitude: '-34%',
     duration: '33 days',
     startDate: '2020-01-15',
+    fetchStart: '2017-01-01',   // 3 years of warmup
+    fetchEnd:   '2022-12-31',   // covers crash + full V-shaped recovery
     context: [
       "It's January 15, 2020. The WHO has confirmed human-to-human transmission of a new virus in Wuhan, China. The markets have barely noticed — the S&P 500 is near all-time highs. Chinese New Year is in a week.",
       "\"It's just like SARS\" says every commentator. Most analysts expect China to contain it within weeks. Markets are up. Tech earnings are strong. Everything is fine.",
@@ -78,6 +84,8 @@ export const CRASH_SCENARIOS = [
     magnitude: '-77%',
     duration: '14 months',
     startDate: '2021-07-01',
+    fetchStart: '2018-01-01',   // META listed 2012; 3 years warmup
+    fetchEnd:   '2024-12-31',   // covers crash (Nov 2022 trough) + recovery
     context: [
       "It's July 2021. Meta Platforms (formerly Facebook) has just reported record revenues — $29 billion in a quarter. Mark Zuckerberg has declared he's building the metaverse. The stock has tripled in four years.",
       "One year and four months later, it will be down 77% — destroying $700 billion in market cap. It's one of the largest single-stock destructions of value in US market history.",
@@ -93,6 +101,8 @@ export const CRASH_SCENARIOS = [
     magnitude: '-10%',
     duration: '~2 weeks',
     startDate: '2024-07-15',
+    fetchStart: '2022-01-01',   // 2.5 years warmup
+    fetchEnd:   null,           // fetch up to today (recent event)
     context: [
       "It's July 15, 2024. The Bank of Japan has just raised interest rates for only the second time in 17 years — a tiny 0.25% move. To most observers, it's a non-event. No one talks about it.",
       "But for years, traders worldwide have been borrowing cheaply in yen and investing in higher-yield US assets — the 'yen carry trade.' When Japan raised rates, the cost of that trade changed overnight. Suddenly everyone needed to close the same position at once.",
@@ -108,6 +118,8 @@ export const CRASH_SCENARIOS = [
     magnitude: '-40%',
     duration: '~8 weeks',
     startDate: '2015-11-01',
+    fetchStart: '2012-01-01',   // 4 years warmup for SOL.JO
+    fetchEnd:   '2018-12-31',   // covers event + 3 years aftermath
     context: [
       "It's the evening of Wednesday December 9, 2015 in South Africa. President Jacob Zuma has just fired Finance Minister Nhlanhla Nene — a respected figure who had been holding the budget line — and replaced him with a political unknown.",
       "The rand goes into freefall. The dollar buys R17, then R18, touching R17.90 in days. This is one of the most dramatic single-night currency collapses in South Africa's democratic history. The JSE opens in chaos the next morning.",

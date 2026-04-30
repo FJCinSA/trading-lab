@@ -62,10 +62,15 @@ export function updateYahooStatus() {
  *
  * @param {string} ticker - e.g. 'TDY', 'TSLA'
  * @param {object} [opts]
- * @param {boolean} [opts.usePeriods] - When true, sends period1=0 + period2=now to the
- *   proxy instead of range=max.  Yahoo Finance v8 ignores interval=1d for range=max on
- *   very long-dated tickers (returning monthly data instead), but DOES honour it when
+ * @param {boolean} [opts.usePeriods] - When true, uses period1/period2 Unix timestamps
+ *   instead of range=max.  Yahoo Finance v8 ignores interval=1d for range=max on very
+ *   long-dated tickers (returning monthly data instead), but DOES honour it when
  *   period1/period2 are supplied — essential for crash-study scenarios like QQQ 1999.
+ * @param {string|null} [opts.fetchStart] - ISO date string (e.g. '2005-01-01') for period1.
+ *   If null/omitted, defaults to Unix epoch 0 (fetch from ticker inception).
+ * @param {string|null} [opts.fetchEnd]   - ISO date string (e.g. '2011-12-31') for period2.
+ *   If null/omitted, defaults to now. Bounding the window prevents proxy timeouts when
+ *   fetching old tickers with 20+ years of history.
  * @returns {Promise<{d:string,o:number,h:number,l:number,c:number,v:number}[]>}
  */
 export async function fetchYahoo(ticker, opts = {}) {
@@ -79,9 +84,15 @@ export async function fetchYahoo(ticker, opts = {}) {
   if (opts.usePeriods) {
     // Use Unix-timestamp range so Yahoo returns genuine daily candles regardless
     // of how far back the ticker goes (bypasses Yahoo's auto-coarsening for range=max).
-    const period2 = String(Math.floor(Date.now() / 1000));
+    // fetchStart/fetchEnd bound the window to avoid downloading decades of unused data.
+    const period1 = opts.fetchStart
+      ? String(Math.floor(new Date(opts.fetchStart).getTime() / 1000))
+      : '0';
+    const period2 = opts.fetchEnd
+      ? String(Math.floor(new Date(opts.fetchEnd).getTime() / 1000))
+      : String(Math.floor(Date.now() / 1000));
     url = base + '/?symbol=' + encodeURIComponent(t.yahoo) +
-          '&period1=0&period2=' + period2 + '&interval=1d';
+          '&period1=' + period1 + '&period2=' + period2 + '&interval=1d';
   } else {
     url = base + '/?symbol=' + encodeURIComponent(t.yahoo) + '&range=max&interval=1d';
   }
