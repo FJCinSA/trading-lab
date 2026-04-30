@@ -1,6 +1,6 @@
 # FJC Trading Lab — Roadmap & Build Discipline
 
-**Last updated:** Thursday, 30 April 2026 (Pillar 4 — Decision Journal shipped)
+**Last updated:** Thursday, 30 April 2026 (Pillar 5 — Comparison/Overlay shipped)
 **Owners:** Francois Coetzee + James Caroto-Coetzee
 **Build partner:** Claude (via Cowork mode)
 
@@ -42,7 +42,7 @@ Each pillar must be **fully shipped to production** (committed to GitHub, deploy
 | 2 | **Replay Mode (Phase 1 MVP)** — pick any historical date, advance day-by-day, decisions on incomplete information | ✅ **SHIPPED 30 April 2026** | Delivered |
 | 3 | **Historical Analog Engine** — for any setup, scan history for matches, show outcome distribution and analog dates | ✅ **SHIPPED 30 April 2026** | Delivered |
 | 4 | **Decision Journal with weekly AI review** | ✅ **SHIPPED 30 April 2026** | Delivered |
-| 5 | **Comparison / overlay mode** — two instruments on one chart, normalised | Available any time | 2–3 hours |
+| 5 | **Comparison / overlay mode** — two instruments on one chart, normalised | ✅ **SHIPPED 30 April 2026** | Delivered |
 | 6 | **Famous Crashes case study library** — META 2022, COVID 2020, GFC 2008, 1987, dotcom 2000, Aug 2024 yen carry, USDZAR Dec 2015 | Blocked by 2+3 | 1–2 hours per scenario |
 | 7 | **Curriculum modules** — structured lessons with progress tracking | Blocked by all of the above | 2–3 hours per module |
 
@@ -140,6 +140,7 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 30 Apr 2026 | Pillar 5 (Comparison/Overlay) shipped | "Compare vs" dropdown in the indicator toolbar. Overlay line uses its own normalised Y scale (full chart height = overlay min-to-max range). Both tickers rebased to 100 at the first visible candle. Legend shows "TDY +5.2% vs TSLA +18.4%" colour-coded green/red. End-of-line pill label on the overlay. No new module — added `drawOverlay()` to chart.js. No service worker bump required (no new JS file). |
 | 30 Apr 2026 | Pillar 4 (Decision Journal) shipped | `js/journal.js` (15th ES module) created. Every trade — manual or autopilot — is logged with the trader's reasoning. AI Review button sends last 14 days of entries to Claude for pattern analysis. Buy/Sell buttons now prompt for reasoning before executing; pressing Cancel aborts the trade. Autopilot's `executeDecision()` logs pilot trades automatically with the plain-English rule rationale. Service worker bumped to v5. |
 | 30 Apr 2026 | Decision Journal (Pillar 4) promoted ahead of Comparison/Overlay (now Pillar 5) | Journal is core to the teaching mission — it is where reflection lives. Overlay is a convenience feature. The lab's thesis demands the journal exist before analysis tools multiply. |
 | 30 Apr 2026 | Pillar 6 (Famous Crashes) will require bundled historical JSON data | Yahoo Finance's 2-year limit cannot fetch 2008, 2000, or 1987. Static JSON crash datasets must be bundled in the repo before that pillar begins. |
@@ -159,9 +160,9 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 
 ## Outstanding to-do (prioritised)
 
-1. **Pillars 1–4 all shipped 29–30 April 2026.** Docs updated and committed — repo is current.
+1. **Pillars 1–5 all shipped 29–30 April 2026.** Docs updated and committed — repo is current.
 2. **ES module refactor shipped 30 April 2026.** trading-lab.html is now a clean HTML/CSS shell; all logic lives in `js/*.js` (15 modules).
-3. **Next: Pillar 5 — Comparison / Overlay Mode.** Two instruments on one chart, normalised. Estimated 2–3 hours.
+3. **Next: Pillar 6 — Famous Crashes case study library.** Blocked: Yahoo Finance's 2-year limit cannot reach 2008, 2000, or 1987. Static JSON datasets must be bundled in the repo before this build begins.
 4. **Before Pillar 6 (Famous Crashes): decide on data source.** Yahoo Finance's 2-year limit means 2008 and 1987 are not fetchable. Decision needed: bundle crash data as static JSON files in the repo before that build begins.
 5. NWU Engineering email for CapnoSafe — separate project, do not let trading-lab consume that bandwidth.
 

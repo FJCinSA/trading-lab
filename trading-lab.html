@@ -248,6 +248,15 @@
           <button class="toggle actions on" data-ind="actions" data-tip="Show action emojis BELOW the candle at moments where a decision might be warranted (Golden Cross, Death Cross, RSI extremes).">Actions</button>
           <button class="toggle" data-ind="sr" data-tip="Toggle support/resistance drawing mode. When ON, click anywhere on the chart to place a horizontal price line.">Draw S/R</button>
           <button class="btn" id="clear-sr" data-tip="Remove all support/resistance lines for this ticker.">Clear S/R</button>
+          <span style="width:1px;background:var(--line);align-self:stretch;margin:0 2px"></span>
+          <select id="overlay-sym" class="btn" style="font-size:12px;padding:5px 8px"
+            data-tip="Overlay a second ticker as a normalised % return line. Both are rebased to 100 at the start of the window so you can compare relative performance directly.">
+            <option value="">Compare vs…</option>
+            <option value="TDY">vs TDY</option>
+            <option value="TSLA">vs TSLA</option>
+            <option value="SOL">vs SOL</option>
+            <option value="MNST">vs MNST</option>
+          </select>
         </div>
       </div>
 
@@ -258,6 +267,7 @@
             <span>Candles <b id="lbl-ticker">--</b></span>
             <span style="color:var(--gold)">- MA50</span>
             <span style="color:var(--blue)">- MA200</span>
+            <span id="overlay-legend" style="color:#ff8c5a;display:none">- <span id="overlay-legend-sym"></span> (normalised)</span>
           </div>
           <div class="ohlc" id="ohlc"></div>
         </div>

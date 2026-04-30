@@ -1,5 +1,5 @@
 // ============================================================
-// FJC Trading Lab — Main Orchestrator (Pillars 1-4)
+// FJC Trading Lab — Main Orchestrator (Pillars 1-5)
 // ============================================================
 // This is the entry point. Its only job is to wire everything together:
 //   • imports all 14 sibling modules
@@ -19,7 +19,8 @@ import { state, defaultPortfolio, defaultPilot,
 import { sma, bollinger, rsi }                         from './indicators.js';
 import { genCandles }                                  from './synthetic.js';
 import { computeHistoricalEdge, renderHistoricalEdge } from './edge.js';
-import { initChart, drawCandles, drawVolume, drawRSI } from './chart.js';
+import { initChart, drawCandles, drawVolume, drawRSI,
+         drawOverlay }                                  from './chart.js';
 import { updateProxyStatus, updateYahooStatus,
          refreshAllFromYahoo }                         from './data.js';
 import { renderPortfolio, renderAlerts, checkAlerts,
@@ -59,6 +60,19 @@ export function render() {
   const rsiArr = rsiFull .slice(sliceStart);
 
   drawCandles(visible, ma50, ma200, bbUp, bbDn, rsiArr);
+
+  // Overlay comparison line — drawn on top of candles if active
+  if (state.overlay.sym && state.overlay.sym !== state.active) {
+    drawOverlay(state.overlay.sym, visible);
+    const legEl  = document.getElementById('overlay-legend');
+    const symEl  = document.getElementById('overlay-legend-sym');
+    if (legEl)  legEl.style.display = '';
+    if (symEl)  symEl.textContent   = state.overlay.sym;
+  } else {
+    const legEl = document.getElementById('overlay-legend');
+    if (legEl) legEl.style.display = 'none';
+  }
+
   drawVolume(visible);
   drawRSI(rsiArr);
 
@@ -68,6 +82,21 @@ export function render() {
   renderPilot();
   renderJournal();
   checkAlerts();
+
+  // Keep overlay select in sync: disable option for the active ticker, clear if self-compare
+  const overlaySel = document.getElementById('overlay-sym');
+  if (overlaySel) {
+    for (const opt of overlaySel.options) {
+      opt.disabled = (opt.value === state.active);
+    }
+    // If currently showing self-compare (tab switch), reset to "none"
+    if (state.overlay.sym === state.active) {
+      state.overlay.sym = null;
+      overlaySel.value  = '';
+    } else {
+      overlaySel.value  = state.overlay.sym || '';
+    }
+  }
 }
 
 // ------------------------------------------------------------------
@@ -223,6 +252,14 @@ function bindControls() {
 
   // ---- Decision Journal ----
   document.getElementById('btn-clear-journal').onclick = clearJournal;
+
+  // ---- Overlay comparison (Pillar 5) ----
+  document.getElementById('overlay-sym').onchange = (e) => {
+    const sel = e.target.value;
+    // Don't compare a ticker to itself
+    state.overlay.sym = (sel && sel !== state.active) ? sel : null;
+    render();
+  };
 
   // ---- Historical Analogs ----
   // Pass jumpToAnalog as the callback so renderAnalogs can trigger replay

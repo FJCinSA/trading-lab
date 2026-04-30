@@ -78,7 +78,11 @@ export const state = {
 
   // Historical Edge — updated by: state.historicalEdge = computeHistoricalEdge()
   // Lives on state so every module reads the same recomputed value after replay/init
-  historicalEdge: {}
+  historicalEdge: {},
+
+  // Overlay comparison (Pillar 5) — null = off, or a ticker symbol e.g. 'TSLA'
+  // Not persisted — view preference only, resets on reload
+  overlay: { sym: null }
 };
 
 // ------------------------------------------------------------------

@@ -359,6 +359,153 @@ export function drawVolume(candles) {
 // RSI chart
 // ------------------------------------------------------------------
 
+// ------------------------------------------------------------------
+// Overlay comparison line (Pillar 5)
+// ------------------------------------------------------------------
+
+/**
+ * Draw a normalised comparison line for a second ticker on top of the
+ * existing price chart. Called AFTER drawCandles() so it renders on top.
+ *
+ * The overlay line uses its own Y scale (full chart height = overlay's
+ * min-to-max range). A dashed zero line shows the starting reference.
+ * A legend box at the top-left shows both tickers' % return.
+ *
+ * @param {string}   overlaySym  Ticker symbol to compare against
+ * @param {object[]} visible     The base ticker's visible candle slice
+ */
+export function drawOverlay(overlaySym, visible) {
+  if (!overlaySym || !state.data[overlaySym] || !chartGeom) return;
+  if (!visible || visible.length < 2) return;
+
+  const g = chartGeom;
+  const cv = document.getElementById('price-chart');
+  const ctx = cv.getContext('2d');
+
+  // Build a date→candle lookup for the overlay ticker (fast O(1) per point)
+  const overlayMap = {};
+  for (const c of state.data[overlaySym]) overlayMap[c.d] = c;
+
+  // Anchor: find the overlay candle closest to the first visible date
+  const anchorDate = visible[0].d;
+  let overlayAnchorC = overlayMap[anchorDate];
+  if (!overlayAnchorC) {
+    // Closest available date (handles holidays / date gaps)
+    const t0 = new Date(anchorDate).getTime();
+    overlayAnchorC = state.data[overlaySym].reduce((best, c) => {
+      return Math.abs(new Date(c.d) - t0) < Math.abs(new Date(best.d) - t0) ? c : best;
+    }, state.data[overlaySym][0]);
+  }
+  if (!overlayAnchorC) return;
+
+  const overlayAnchor = overlayAnchorC.c;
+
+  // Build normalised series: 100 = starting value, 110 = +10%, etc.
+  const normSeries = visible.map(vc => {
+    const oc = overlayMap[vc.d];
+    return oc ? (oc.c / overlayAnchor) * 100 : null;
+  });
+
+  const validNorm = normSeries.filter(v => v !== null);
+  if (validNorm.length < 2) return;
+
+  // Y scale for the overlay line — always includes 100 (start point)
+  let normLo = Math.min(...validNorm, 100);
+  let normHi = Math.max(...validNorm, 100);
+  const normPad = Math.max((normHi - normLo) * 0.12, 0.5);
+  normLo -= normPad;
+  normHi += normPad;
+
+  const toY = (v) => g.padT + g.h * (1 - (v - normLo) / (normHi - normLo));
+  const OVERLAY_COLOR = '#ff8c5a'; // warm coral — distinct from gold/blue/green/purple
+
+  ctx.save();
+
+  // Zero reference line at norm = 100 (the starting point)
+  ctx.strokeStyle = 'rgba(255,140,90,0.2)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 6]);
+  const y100 = toY(100);
+  ctx.beginPath();
+  ctx.moveTo(g.padL, y100);
+  ctx.lineTo(g.W - g.padR, y100);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Overlay normalised line
+  ctx.strokeStyle = OVERLAY_COLOR;
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  let first = true;
+  let lastOverlayNorm = null;
+  for (let i = 0; i < visible.length; i++) {
+    const v = normSeries[i];
+    if (v === null) continue;
+    const x = g.padL + i * g.cw + g.cw / 2;
+    const y = toY(v);
+    if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+    lastOverlayNorm = v;
+  }
+  ctx.stroke();
+
+  // Right-side end label for the overlay line
+  if (lastOverlayNorm !== null) {
+    const lastIdx = normSeries.length - 1 - [...normSeries].reverse().findIndex(v => v !== null);
+    const lx = g.padL + lastIdx * g.cw + g.cw / 2;
+    const ly = toY(lastOverlayNorm);
+    ctx.font = 'bold 10px Inter,Arial';
+    const pct = lastOverlayNorm - 100;
+    const label = overlaySym + ' ' + (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+    const tw = ctx.measureText(label).width;
+    // Draw pill label at the end of the line
+    const px = Math.min(lx + 4, g.W - g.padR - tw - 4);
+    ctx.fillStyle = 'rgba(15,20,40,0.80)';
+    ctx.fillRect(px - 2, ly - 9, tw + 6, 13);
+    ctx.fillStyle = pct >= 0 ? '#26a96c' : '#e0524d';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, px, ly - 2);
+  }
+
+  // Legend box at top-left: "TDY +5.2%  vs  TSLA +18.4%"
+  const baseRet = ((visible[visible.length - 1].c / visible[0].c) - 1) * 100;
+  const overRet = lastOverlayNorm !== null ? lastOverlayNorm - 100 : null;
+
+  if (overRet !== null) {
+    const baseSym  = state.active;
+    const baseTxt  = baseSym  + ' ' + (baseRet  >= 0 ? '+' : '') + baseRet.toFixed(1)  + '%';
+    const vsTxt    = '  vs  ';
+    const overTxt  = overlaySym + ' ' + (overRet >= 0 ? '+' : '') + overRet.toFixed(1) + '%';
+
+    ctx.font = 'bold 10px Inter,Arial';
+    const bw   = ctx.measureText(baseTxt).width;
+    const vsw  = ctx.measureText(vsTxt).width;
+    const ovw  = ctx.measureText(overTxt).width;
+    const boxW = bw + vsw + ovw + 14;
+    const lx   = g.padL + 6;
+    const ly   = g.padT + 6;
+
+    ctx.fillStyle = 'rgba(10,16,32,0.88)';
+    ctx.strokeStyle = 'rgba(255,140,90,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(lx - 4, ly - 4, boxW, 16, 3)
+                  : ctx.rect(lx - 4, ly - 4, boxW, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    let cx = lx;
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = baseRet  >= 0 ? '#26a96c' : '#e0524d';
+    ctx.fillText(baseTxt, cx, ly);  cx += bw;
+    ctx.fillStyle = '#8a94a8';
+    ctx.fillText(vsTxt, cx, ly);    cx += vsw;
+    ctx.fillStyle = overRet >= 0 ? '#26a96c' : '#e0524d';
+    ctx.fillText(overTxt, cx, ly);
+  }
+
+  ctx.restore();
+}
+
 /** Draw the RSI line chart with oversold/overbought zone shading. */
 export function drawRSI(rsiArr) {
   const cv = document.getElementById('rsi-chart');
