@@ -112,8 +112,8 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
   if (state.crashStudy) {
     const { startDate, endDate } = state.crashStudy;
 
-    // Subtle red tint over the entire chart area — signals danger mode
-    ctx.fillStyle = 'rgba(200, 30, 30, 0.045)';
+    // Red tint over the entire chart area — clearly signals danger mode
+    ctx.fillStyle = 'rgba(160, 30, 30, 0.13)';
     ctx.fillRect(padL, padT, w, h);
 
     // Find the pixel x-positions for crash start and end dates
@@ -130,14 +130,14 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
     }
 
     if (czStartX !== null) {
-      // Shaded crash zone band between onset and trough
-      ctx.fillStyle = 'rgba(220, 50, 50, 0.10)';
+      // Deeper red band over the crash period (onset → trough)
+      ctx.fillStyle = 'rgba(220, 45, 45, 0.22)';
       ctx.fillRect(czStartX, padT, czEndX - czStartX, h);
 
-      // Dashed vertical line marking the crash onset
+      // Solid vertical line at crash onset
       ctx.save();
-      ctx.strokeStyle = 'rgba(220, 65, 65, 0.80)';
-      ctx.lineWidth   = 1.5;
+      ctx.strokeStyle = 'rgba(230, 70, 70, 0.95)';
+      ctx.lineWidth   = 2;
       ctx.setLineDash([5, 3]);
       ctx.beginPath();
       ctx.moveTo(czStartX, padT);
@@ -145,12 +145,23 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // "▼ CRASH ONSET" label just inside the onset line
-      ctx.fillStyle   = 'rgba(235, 85, 85, 0.95)';
-      ctx.font        = 'bold 10px Inter,Arial';
-      ctx.textAlign   = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText('▼ CRASH ONSET', czStartX + 4, padT + 3);
+      // "▼ CRASH ONSET" label with filled background pill so it's always readable
+      ctx.font = 'bold 11px Inter,Arial';
+      const labelText = '▼ CRASH ONSET';
+      const labelW    = ctx.measureText(labelText).width + 10;
+      const labelH    = 16;
+      // Position to the right of the line; flip left if too close to the right edge
+      const labelX = (czStartX + 6 + labelW < padL + w) ? czStartX + 6 : czStartX - labelW - 6;
+      const labelY = padT + 4;
+      ctx.fillStyle = 'rgba(200, 40, 40, 0.88)';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(labelX, labelY, labelW, labelH, 3);
+      else ctx.rect(labelX, labelY, labelW, labelH);
+      ctx.fill();
+      ctx.fillStyle    = '#ffffff';
+      ctx.textAlign    = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(labelText, labelX + 5, labelY + labelH / 2);
       ctx.restore();
     }
   }
