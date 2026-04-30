@@ -437,8 +437,10 @@ async function jumpToCrash(scenario) {
   }
 
   try {
-    // fetchYahoo now uses range=max so this returns the full available history
-    const candles = await fetchYahoo(scenario.ticker);
+    // usePeriods=true sends period1=0/period2=now to the proxy, which forces Yahoo
+    // to return genuine daily candles even for tickers with 20+ years of history.
+    // (Yahoo v8 ignores interval=1d for range=max on long-dated tickers.)
+    const candles = await fetchYahoo(scenario.ticker, { usePeriods: true });
     state.data[scenario.ticker] = candles;
   } catch (e) {
     alert('Failed to load ' + scenario.ticker + ' data:\n' + (e && e.message || e));

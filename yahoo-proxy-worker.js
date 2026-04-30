@@ -58,23 +58,45 @@ export default {
     const range    = (url.searchParams.get('range') || '2y').trim();
     const interval = (url.searchParams.get('interval') || '1d').trim();
 
+    // Optional period1/period2 Unix timestamp params — bypass range= and force
+    // Yahoo to return daily candles for a specific historical window.  When present
+    // they take precedence over the range= param (range validation is skipped).
+    const period1Raw = url.searchParams.get('period1');
+    const period2Raw = url.searchParams.get('period2');
+    const usePeriods = period1Raw !== null;
+
     if (!symbol) {
       return jsonError('Query parameter "symbol" is required.', 400, cors);
     }
     if (!SYMBOL_RE.test(symbol)) {
       return jsonError('Symbol contains illegal characters.', 400, cors);
     }
-    if (!ALLOWED_RANGES.has(range)) {
+    if (!usePeriods && !ALLOWED_RANGES.has(range)) {
       return jsonError('range must be one of: ' + [...ALLOWED_RANGES].join(', '), 400, cors);
     }
     if (!ALLOWED_INTERVALS.has(interval)) {
       return jsonError('interval must be one of: ' + [...ALLOWED_INTERVALS].join(', '), 400, cors);
     }
 
-    const yahooUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/' +
-                     encodeURIComponent(symbol) +
-                     '?range=' + encodeURIComponent(range) +
-                     '&interval=' + encodeURIComponent(interval);
+    let yahooUrl;
+    if (usePeriods) {
+      const p1 = period1Raw.trim();
+      const p2 = (period2Raw || String(Math.floor(Date.now() / 1000))).trim();
+      if (!/^\d+$/.test(p1) || !/^\d+$/.test(p2)) {
+        return jsonError('period1 and period2 must be Unix timestamps (integers).', 400, cors);
+      }
+      // period1/period2 always use interval=1d so Yahoo returns genuine daily data
+      yahooUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/' +
+                 encodeURIComponent(symbol) +
+                 '?period1=' + encodeURIComponent(p1) +
+                 '&period2=' + encodeURIComponent(p2) +
+                 '&interval=1d';
+    } else {
+      yahooUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/' +
+                 encodeURIComponent(symbol) +
+                 '?range=' + encodeURIComponent(range) +
+                 '&interval=' + encodeURIComponent(interval);
+    }
 
     let upstream;
     try {

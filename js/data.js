@@ -55,22 +55,36 @@ export function updateYahooStatus() {
 
 /**
  * Fetch the full available history of daily OHLCV candles for one ticker
- * from the user's Yahoo Finance Cloudflare Worker proxy (range=max).
+ * from the user's Yahoo Finance Cloudflare Worker proxy.
  *
  * Returns an array of { d, o, h, l, c, v } objects — same shape as
  * the synthetic data engine, so the rest of the app is data-source agnostic.
  *
  * @param {string} ticker - e.g. 'TDY', 'TSLA'
+ * @param {object} [opts]
+ * @param {boolean} [opts.usePeriods] - When true, sends period1=0 + period2=now to the
+ *   proxy instead of range=max.  Yahoo Finance v8 ignores interval=1d for range=max on
+ *   very long-dated tickers (returning monthly data instead), but DOES honour it when
+ *   period1/period2 are supplied — essential for crash-study scenarios like QQQ 1999.
  * @returns {Promise<{d:string,o:number,h:number,l:number,c:number,v:number}[]>}
  */
-export async function fetchYahoo(ticker) {
+export async function fetchYahoo(ticker, opts = {}) {
   const t = TICKERS.find(x => x.sym === ticker);
   if (!t) throw new Error('Unknown ticker: ' + ticker);
   if (!state.yahooProxy) throw new Error('Yahoo proxy URL not configured');
   if (!t.yahoo) throw new Error('No Yahoo symbol mapping for ' + ticker);
 
   const base = state.yahooProxy.replace(/\/$/, '');
-  const url  = base + '/?symbol=' + encodeURIComponent(t.yahoo) + '&range=max&interval=1d';
+  let url;
+  if (opts.usePeriods) {
+    // Use Unix-timestamp range so Yahoo returns genuine daily candles regardless
+    // of how far back the ticker goes (bypasses Yahoo's auto-coarsening for range=max).
+    const period2 = String(Math.floor(Date.now() / 1000));
+    url = base + '/?symbol=' + encodeURIComponent(t.yahoo) +
+          '&period1=0&period2=' + period2 + '&interval=1d';
+  } else {
+    url = base + '/?symbol=' + encodeURIComponent(t.yahoo) + '&range=max&interval=1d';
+  }
   const resp = await fetch(url);
   if (!resp.ok) {
     const text = await resp.text();
