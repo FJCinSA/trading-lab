@@ -108,62 +108,99 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
 
   // ── Crash zone overlay (Pillar 6) ────────────────────────────────
   // Drawn AFTER grid lines, BEFORE candles so candlesticks render on top.
-  // Requires state.crashStudy to be set by jumpToCrash() in main.js.
+  // Three visual states depending on where the replay pointer is:
+  //   A) Crash hasn't started yet  → red tint + "CRASH →" arrow at right edge
+  //   B) Crash onset is on screen  → red tint + deeper band from onset rightward + "▼ CRASH ONSET" pill
+  //   C) Deep into crash (onset is off left edge) → red tint + entire visible area is deeper red band
   if (state.crashStudy) {
     const { startDate, endDate } = state.crashStudy;
+    const firstDate = candles.length > 0 ? candles[0].d               : null;
+    const lastDate  = candles.length > 0 ? candles[candles.length-1].d : null;
 
-    // Red tint over the entire chart area — clearly signals danger mode
-    ctx.fillStyle = 'rgba(160, 30, 30, 0.13)';
+    // Always: red tint over entire chart area — signals crash study mode
+    ctx.fillStyle = 'rgba(140, 20, 20, 0.18)';
     ctx.fillRect(padL, padT, w, h);
 
-    // Find the pixel x-positions for crash start and end dates
-    let czStartX = null;
-    let czEndX   = padL + w;          // default: right edge of chart
-    for (let i = 0; i < candles.length; i++) {
-      if (czStartX === null && candles[i].d >= startDate) {
-        czStartX = padL + i * cw;
-      }
-      if (endDate && czStartX !== null && candles[i].d > endDate) {
-        czEndX = padL + i * cw;
-        break;
+    // Determine left boundary of crash zone
+    let czStartX;
+    if (firstDate && firstDate >= startDate) {
+      // Entire visible window is already inside the crash — shade it all
+      czStartX = padL;
+    } else {
+      // Search for the crash onset candle within the visible window
+      czStartX = null;
+      for (let i = 0; i < candles.length; i++) {
+        if (candles[i].d >= startDate) { czStartX = padL + i * cw; break; }
       }
     }
 
+    // Determine right boundary (trough date, or right edge if still crashing)
+    let czEndX = padL + w;
+    if (endDate) {
+      for (let i = 0; i < candles.length; i++) {
+        if (candles[i].d > endDate) { czEndX = padL + i * cw; break; }
+      }
+    }
+
+    ctx.save();
+
     if (czStartX !== null) {
-      // Deeper red band over the crash period (onset → trough)
-      ctx.fillStyle = 'rgba(220, 45, 45, 0.22)';
+      // ── State B or C: crash is visible or already past left edge ──
+      ctx.fillStyle = 'rgba(200, 40, 40, 0.30)';
       ctx.fillRect(czStartX, padT, czEndX - czStartX, h);
 
-      // Solid vertical line at crash onset
-      ctx.save();
-      ctx.strokeStyle = 'rgba(230, 70, 70, 0.95)';
+      // Onset line — only draw if onset is actually on-screen (not at left edge)
+      if (czStartX > padL + 2) {
+        ctx.strokeStyle = 'rgba(235, 75, 75, 0.95)';
+        ctx.lineWidth   = 2;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(czStartX, padT);
+        ctx.lineTo(czStartX, padT + h);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Pill label — flip to left of line if near right edge
+        ctx.font = 'bold 11px Inter,Arial';
+        const lbl  = '▼ CRASH ONSET';
+        const lw   = ctx.measureText(lbl).width + 10;
+        const lh   = 16;
+        const lx   = (czStartX + 6 + lw < padL + w) ? czStartX + 6 : czStartX - lw - 6;
+        const ly   = padT + 4;
+        ctx.fillStyle = 'rgba(200, 40, 40, 0.92)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(lx, ly, lw, lh, 3); else ctx.rect(lx, ly, lw, lh);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(lbl, lx + 5, ly + lh / 2);
+      }
+
+    } else if (lastDate && lastDate < startDate) {
+      // ── State A: crash is upcoming — show "CRASH →" arrow at right edge ──
+      ctx.strokeStyle = 'rgba(230, 70, 70, 0.90)';
       ctx.lineWidth   = 2;
       ctx.setLineDash([5, 3]);
       ctx.beginPath();
-      ctx.moveTo(czStartX, padT);
-      ctx.lineTo(czStartX, padT + h);
+      ctx.moveTo(padL + w - 1, padT);
+      ctx.lineTo(padL + w - 1, padT + h);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // "▼ CRASH ONSET" label with filled background pill so it's always readable
       ctx.font = 'bold 11px Inter,Arial';
-      const labelText = '▼ CRASH ONSET';
-      const labelW    = ctx.measureText(labelText).width + 10;
-      const labelH    = 16;
-      // Position to the right of the line; flip left if too close to the right edge
-      const labelX = (czStartX + 6 + labelW < padL + w) ? czStartX + 6 : czStartX - labelW - 6;
-      const labelY = padT + 4;
-      ctx.fillStyle = 'rgba(200, 40, 40, 0.88)';
+      const lbl = 'CRASH BEGINS ▶';
+      const lw  = ctx.measureText(lbl).width + 10;
+      const lh  = 16;
+      const lx  = padL + w - lw - 4;
+      const ly  = padT + 4;
+      ctx.fillStyle = 'rgba(200, 40, 40, 0.92)';
       ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(labelX, labelY, labelW, labelH, 3);
-      else ctx.rect(labelX, labelY, labelW, labelH);
+      if (ctx.roundRect) ctx.roundRect(lx, ly, lw, lh, 3); else ctx.rect(lx, ly, lw, lh);
       ctx.fill();
-      ctx.fillStyle    = '#ffffff';
-      ctx.textAlign    = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(labelText, labelX + 5, labelY + labelH / 2);
-      ctx.restore();
+      ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(lbl, lx + 5, ly + lh / 2);
     }
+
+    ctx.restore();
   }
   // ── end crash zone overlay ────────────────────────────────────────
 

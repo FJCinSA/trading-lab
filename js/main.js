@@ -492,11 +492,18 @@ async function jumpToCrash(scenario) {
     buildTabs();
   }
 
-  // Widen the timeframe to 90D so the user sees meaningful context at the crash onset
-  // (the default 30D shows too little of the pre-crash environment)
-  state.timeframe = 90;
+  // Pick a timeframe that fits the full crash period on screen.
+  // Calendar days / 1.4 ≈ trading days; round up to the next available button.
+  const calDays = scenario.endDate
+    ? Math.round((new Date(scenario.endDate) - new Date(scenario.startDate)) / 86400000)
+    : 90;
+  const newTf = calDays > 400 ? 500        // 2Y covers very long crashes (Dot-com)
+              : calDays > 200 ? 365        // 1Y covers medium crashes (GFC, META)
+              : calDays >  90 ? 180        // 180D covers USDZAR (~8 months)
+              :                  90;       // 90D covers short crashes (COVID, Yen Carry)
+  state.timeframe = newTf;
   document.querySelectorAll('#tf button').forEach(b => {
-    b.classList.toggle('on', +b.dataset.tf === 90);
+    b.classList.toggle('on', +b.dataset.tf === newTf);
   });
 
   // Activate crash study state so chart.js draws the crash zone overlay
@@ -513,9 +520,11 @@ async function jumpToCrash(scenario) {
     render();
   };
 
-  // Jump replay to the crash onset — uses jumpToAnalog which handles
-  // the full replay index build, state backup, and render() call
-  jumpToAnalog(scenario.ticker, scenario.startDate);
+  // Position replay at the crash TROUGH (endDate) so the full drawdown is visible.
+  // The timeframe chosen above fits the entire crash period in one view.
+  // The learner sees the full picture first, then uses ◄ to step back to onset.
+  const replayTarget = scenario.endDate || scenario.startDate;
+  jumpToAnalog(scenario.ticker, replayTarget);
 
   // Scroll to the top so the user sees the chart + context panel + replay controls.
   // Without this the user clicks from the bottom of the page and sees no visual change.
