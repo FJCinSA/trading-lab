@@ -34,6 +34,7 @@ import { initReplay, setupReplayMode, enterReplay,
          updateReplayUI }                              from './replay.js';
 import { addJournalEntry, renderJournal, clearJournal } from './journal.js';
 import { renderCrashes, showCrashContext }              from './crashes.js';
+import { renderCurriculum, closeLesson }               from './curriculum.js';
 
 // ------------------------------------------------------------------
 // Core render function — redraws everything visible on screen
@@ -508,6 +509,12 @@ function init() {
   updateAutopilotUI();
   updateTradeTooltips();
   renderCrashes(jumpToCrash);
+  renderCurriculum();
+
+  // Close lesson modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLesson();
+  });
 }
 
 // ------------------------------------------------------------------

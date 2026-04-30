@@ -38,6 +38,7 @@ export const LS_PILOT       = 'fjc-trading-pilot-v1';
 export const LS_YAHOO_PROXY = 'fjc-trading-yahoo-proxy-v1';
 export const LS_FX          = 'fjc-trading-fx-v1';
 export const LS_JOURNAL     = 'fjc-trading-journal-v1';
+export const LS_CURRICULUM  = 'fjc-trading-curriculum-v1';
 
 // Autopilot envelope protection — disengage when portfolio drawdown exceeds this %
 export const ENVELOPE_DRAWDOWN_PCT = 15;

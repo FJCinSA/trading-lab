@@ -2,7 +2,7 @@
 // Caches the app shell so it works offline / loads instantly on revisit.
 // Bump CACHE_VERSION any time you deploy a new version to force refresh.
 
-const CACHE_VERSION = 'fjc-trading-lab-v6';
+const CACHE_VERSION = 'fjc-trading-lab-v7';
 const APP_SHELL = [
   './',
   './index.html',
@@ -25,6 +25,7 @@ const APP_SHELL = [
   './js/replay.js',
   './js/journal.js',
   './js/crashes.js',
+  './js/curriculum.js',
   './js/main.js'
 ];
 

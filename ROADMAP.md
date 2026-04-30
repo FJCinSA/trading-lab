@@ -1,6 +1,6 @@
 # FJC Trading Lab — Roadmap & Build Discipline
 
-**Last updated:** Thursday, 30 April 2026 (Pillar 6 — Famous Crashes shipped)
+**Last updated:** Thursday, 30 April 2026 (Pillar 7 — Curriculum Modules shipped — ALL 7 PILLARS COMPLETE)
 **Owners:** Francois Coetzee + James Caroto-Coetzee
 **Build partner:** Claude (via Cowork mode)
 
@@ -44,7 +44,7 @@ Each pillar must be **fully shipped to production** (committed to GitHub, deploy
 | 4 | **Decision Journal with weekly AI review** | ✅ **SHIPPED 30 April 2026** | Delivered |
 | 5 | **Comparison / overlay mode** — two instruments on one chart, normalised | ✅ **SHIPPED 30 April 2026** | Delivered |
 | 6 | **Famous Crashes case study library** — META 2022, COVID 2020, GFC 2008, 1987, dotcom 2000, Aug 2024 yen carry, USDZAR Dec 2015 | ✅ **SHIPPED 30 April 2026** | Delivered |
-| 7 | **Curriculum modules** — structured lessons with progress tracking | Blocked by all of the above | 2–3 hours per module |
+| 7 | **Curriculum modules** — structured lessons with progress tracking | ✅ **SHIPPED 30 April 2026** | Delivered |
 
 **Rough total:** 30–40 hours of focused build, spread over 6–10 weekend / off-day sessions.
 
@@ -141,6 +141,8 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 | Date | Decision | Rationale |
 |---|---|---|
 | 30 Apr 2026 | Pillar 6 (Famous Crashes) shipped | `js/crashes.js` (16th ES module) created. 6 scenarios: GFC 2008 (SPY), dot-com 2000 (QQQ), COVID 2020 (SPY), META 2022 (META), yen carry Aug 2024 (SPY), USDZAR Dec 2015 (SOL). Three new tickers added to config.js: SPY, META, QQQ — these appear as normal tabs and enrich the Historical Analog Engine with 30+ years of S&P 500 data. Yahoo proxy `range=max` replaces `range=2y` — one-line fix in `data.js` (the Worker already allowed `range=max`). Clicking a scenario fetches the full history, positions Replay Mode at the crash onset, and shows a setting-the-scene narrative panel above the chart. Overlay options now built dynamically from TICKERS in `main.js`. Service worker bumped to v6. |
+| 30 Apr 2026 | Pillar 7 (Curriculum) shipped | `js/curriculum.js` (17th ES module) created. 6 lessons: (1) Reading a Candlestick, (2) MA50 & MA200, (3) RSI, (4) Volume, (5) COVID 2020 Crash Study, (6) The Decision Journal. Each lesson has a full Concept section, In the Lab steps, What to Watch For, and a practical Exercise. Anti-guru principles woven into every lesson — RSI does not predict, MA crosses are lagging, etc. Modal overlay with section headings, callout panels for critical warnings, and a Mark Complete button. Progress tracked in localStorage. Service worker bumped to v7. |
+| 30 Apr 2026 | Commercial potential confirmed | The platform architecture is commercial-ready. Lessons are data modules; a future server fetch with license check requires no structural changes. The anti-guru positioning, the Replay Mode + Analog Engine combination, and the Decision Journal are genuine differentiators no commercial platform has combined. Target customer: educated professional with savings who wants to understand markets without being sold to. |
 | 30 Apr 2026 | Yahoo range=max is free — no static JSON needed | The Cloudflare Worker already had `max` in ALLOWED_RANGES. The frontend was the only thing capping it at `2y`. Changing one URL parameter in `data.js` gave us 30 years of SPY history (back to 1993), 14 years of META, 25 years of QQQ — enough for every crash scenario except 1987 Black Monday (requires ^GSPC). |
 | 30 Apr 2026 | Pillar 5 (Comparison/Overlay) shipped | "Compare vs" dropdown in the indicator toolbar. Overlay line uses its own normalised Y scale (full chart height = overlay min-to-max range). Both tickers rebased to 100 at the first visible candle. Legend shows "TDY +5.2% vs TSLA +18.4%" colour-coded green/red. End-of-line pill label on the overlay. No new module — added `drawOverlay()` to chart.js. No service worker bump required (no new JS file). |
 | 30 Apr 2026 | Pillar 4 (Decision Journal) shipped | `js/journal.js` (15th ES module) created. Every trade — manual or autopilot — is logged with the trader's reasoning. AI Review button sends last 14 days of entries to Claude for pattern analysis. Buy/Sell buttons now prompt for reasoning before executing; pressing Cancel aborts the trade. Autopilot's `executeDecision()` logs pilot trades automatically with the plain-English rule rationale. Service worker bumped to v5. |
@@ -160,13 +162,17 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 
 ---
 
-## Outstanding to-do (prioritised)
+## ✅ ALL 7 PILLARS SHIPPED — 29–30 April 2026
 
-1. **Pillars 1–6 all shipped 29–30 April 2026.** Docs updated and committed — repo is current.
-2. **ES module refactor + 16-module architecture** — `js/crashes.js` is now the 16th module.
-3. **Next: Pillar 7 — Curriculum modules.** Structured lessons with progress tracking. Blocked until design discussion. First lesson candidate: "How to read a chart from zero" using the SPY crash scenarios as worked examples.
-4. **Future crash scenarios to add**: Black Monday 1987 requires ^GSPC (Yahoo has it back to the 1920s). To add: `{ sym:'GSPC', yahoo:'^GSPC' }` in config.js and a new CRASH_SCENARIOS entry with `startDate: '1987-08-01'`.
-5. NWU Engineering email for CapnoSafe — separate project, do not let trading-lab consume that bandwidth.
+The core build is complete. The platform is live at `https://fjcinsa.github.io/trading-lab/`.
+
+## Post-launch priorities (Phase 2 — Commercial)
+
+1. **Commercialisation decision.** The platform has a genuine gap to fill in the market. Architecture is already commercial-ready: lessons are data modules loadable from a server with a license check; analytics, payment processing, and a domain are the only additions needed. Decision: pursue or park?
+2. **Black Monday 1987 crash scenario.** Add `{ sym:'GSPC', yahoo:'^GSPC' }` to config.js. Yahoo has ^GSPC data back to 1928. Start date `'1987-08-01'`. Add scenario to CRASH_SCENARIOS in crashes.js.
+3. **More curriculum lessons.** Lesson 7: Bollinger Bands. Lesson 8: Support and Resistance (drawing in the lab). Lesson 9: Autopilot dissection (read the rules, understand each decision). Lesson 10: Building your own watchlist.
+4. **AI prompt improvement.** As lesson content grows, the AI coaching prompts can reference the curriculum — "you are in Lesson 3, so let's focus on RSI in this analysis."
+5. **NWU Engineering email for CapnoSafe** — separate project, do not let trading-lab consume that bandwidth.
 
 ---
 
