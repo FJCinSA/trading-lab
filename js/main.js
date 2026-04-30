@@ -553,10 +553,18 @@ async function jumpToCrash(scenario) {
     render();
   };
 
-  // Position replay at the crash TROUGH (endDate) so the full drawdown is visible.
-  // The timeframe chosen above fits the entire crash period in one view.
-  // The learner sees the full picture first, then uses ◄ to step back to onset.
-  const replayTarget = scenario.endDate || scenario.startDate;
+  // Position replay 6 months past the trough so the bottom marker AND the early
+  // recovery zone are both visible. Cap at fetchEnd to avoid requesting future data.
+  let replayTarget;
+  if (scenario.endDate) {
+    const d = new Date(scenario.endDate);
+    d.setDate(d.getDate() + 180);                          // 6 months past trough
+    const shifted = d.toISOString().slice(0, 10);
+    const cap     = scenario.fetchEnd || '2030-01-01';
+    replayTarget  = shifted <= cap ? shifted : scenario.endDate;
+  } else {
+    replayTarget = scenario.startDate;
+  }
   jumpToAnalog(scenario.ticker, replayTarget);
 
   // Scroll to the top so the user sees the chart + context panel + replay controls.

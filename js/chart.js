@@ -188,8 +188,9 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
         ctx.fillText(lbl, lx + 5, ly + lh / 2);
       }
 
-      // Bottom / trough marker — green line + pill at endDate if it's on screen
-      if (endDate && czEndX > padL + 2 && czEndX < padL + w - 2) {
+      // Bottom / trough marker — green line + pill at endDate.
+      // Show even when czEndX is at the right edge (replay pointer = endDate).
+      if (endDate && czEndX > padL + 2) {
         ctx.strokeStyle = 'rgba(38, 169, 108, 0.90)';
         ctx.lineWidth   = 2;
         ctx.setLineDash([5, 3]);
