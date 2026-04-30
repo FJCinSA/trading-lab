@@ -504,6 +504,10 @@ async function jumpToCrash(scenario) {
   // Jump replay to the crash onset — uses jumpToAnalog which handles
   // the full replay index build, state backup, and render() call
   jumpToAnalog(scenario.ticker, scenario.startDate);
+
+  // Scroll to the top so the user sees the chart + context panel + replay controls.
+  // Without this the user clicks from the bottom of the page and sees no visual change.
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ------------------------------------------------------------------
