@@ -397,11 +397,27 @@
   Paper trading only. Not investment advice. Always check with your financial advisor before real trades. Built for FJC, 2026.
 </div>
 
-<script>
-//============================================================
-// FJC TRADING LAB
-// Pillars shipped: 1 (Live data) | 2 (Replay Mode) | 3 (Historical Analogs)
-//============================================================
+<script type="module" src="./js/main.js"></script>
+<!--
+  All JavaScript now lives in separate ES module files under js/.
+  Edit js/config.js to add new tickers — everything else auto-updates.
+  Module load order (dependency tree):
+    config.js → (no deps)
+    indicators.js → (no deps)
+    patterns.js → (no deps)
+    synthetic.js → (no deps)
+    state.js → config, indicators (for TICKERS)
+    data.js → config, state
+    chart.js → config, state, indicators, patterns
+    edge.js → config, state, indicators
+    portfolio.js → config, state
+    ai.js → config, state, indicators, patterns
+    autopilot.js → config, state, indicators
+    analogs.js → config, state, indicators
+    replay.js → config, state, edge
+    main.js → everything above
+-->
+<!--
 
 const TICKERS = [
   { sym:'TDY',  name:'Teledyne Technologies', exch:'NYSE',   ccy:'USD', yahoo:'TDY',    start:580, vol:0.018, drift: 0.0015 },
@@ -2363,6 +2379,6 @@ if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.p
       .catch(err => console.warn('[FJC Lab] Service worker registration failed:', err));
   });
 }
-</script>
+-->
 </body>
 </html>

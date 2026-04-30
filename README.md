@@ -1,111 +1,255 @@
 # FJC Trading Lab
 
-**A calm, free, honest paper-trading and learning tool that strips out market noise and teaches with statistical honesty.**
+**A calm, free, open-source paper-trading and learning platform built on statistical honesty — not promises.**
 
-Live at **[fjcinsa.github.io/trading-lab](https://fjcinsa.github.io/trading-lab/)**
+[![Live demo](https://img.shields.io/badge/Live%20demo-fjcinsa.github.io%2Ftrading--lab-brightgreen?style=flat-square)](https://fjcinsa.github.io/trading-lab/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+[![GitHub Pages](https://img.shields.io/badge/Deployed%20via-GitHub%20Pages-orange?style=flat-square)](https://fjcinsa.github.io/trading-lab/)
+[![No build step](https://img.shields.io/badge/Build%20step-none-lightgrey?style=flat-square)]()
+[![Vanilla JS](https://img.shields.io/badge/Stack-Vanilla%20JS%20%2B%20Canvas-yellow?style=flat-square)]()
+
+---
+
+> *"What I like about this graph is the emotional effects are taken away."*
+> — Dr Francois Coetzee, the person this was built for
 
 ---
 
 ## What this is
 
-A web-based trading laboratory designed for one specific person — a 63-year-old anaesthesiologist learning to read markets — and his trader husband. Free, open source, no account, no subscription, no advertising, no upsells.
+A web-based trading laboratory designed for two people: a 63-year-old anaesthesiologist learning to read markets for the first time, and his trader husband. Free, open-source, no account, no subscription, no advertising, no upsells, no paywall of any kind.
 
-The design principle, in a single sentence:
+The lab does one thing that no commercial platform does: **it strips out the noise and leaves only what teaches.**
 
-> **The lab strips out market noise — headlines, panic, gamification — and leaves only what teaches.**
+- Rule-based autopilot with a transparent decision log you can read line by line
+- AI explanations that define every technical term inline, in plain English, the first time it appears
+- Historical Analog Engine — the only honest way to "predict" markets: find past setups that resemble today, show the full distribution of what followed
+- Replay Mode — pretend any historical date is "today" and live through the chart one day at a time
+- Every error message teaches something
 
-Built to be the antithesis of paid trading "gurus":
-- Rule-based autopilot you can read in the source
-- AI explanations that define every technical term inline, in plain English
-- Every error message teaches
-- Statistical honesty: no predictions, only historical analog distributions
-- The track record IS the source code
+This is **not financial advice**. Paper trading only. Speak to a licensed financial advisor before any real trade.
 
-This is **not financial advice**. It is a learning tool that uses paper trading and synthetic / public market data. Speak to a licensed financial advisor before any real trade.
+---
+
+## Live at
+
+**[https://fjcinsa.github.io/trading-lab/](https://fjcinsa.github.io/trading-lab/)**
+
+No install. No login. Opens in your browser. Works offline after first load (service worker cached shell).
 
 ---
 
 ## Features
 
-### Charting
-- Candlestick chart with toggleable indicators: MA50, MA200, Bollinger Bands, support/resistance
-- Pattern detection: Doji, Hammer, Shooting Star, Morning Star (bullish), Evening Star (bearish)
-- Action markers: Golden Cross, Death Cross, RSI threshold crosses
-- Hover tooltip with date, OHLCV, volume vs average %, indicator values colour-coded by RSI thresholds
-- Crosshair date and price badges on the dashed lines
-- Volume spike highlight (>1.5× visible-window average renders in bright gold)
-- Timeframe-aware x-axis labels (30D / 90D / 180D / 1Y / 2Y)
-- Four tickers tracked simultaneously: **TDY** (Teledyne), **TSLA** (Tesla), **SOL** (Sasol JSE), **MNST** (Monster Beverage)
+### 📈 Chart engine
 
-### Live data (optional)
-Set up a private Cloudflare Worker that proxies Yahoo Finance — no API key required (Yahoo's chart endpoint is public). Toggle from synthetic data to real OHLC with a single click.
+| Feature | Detail |
+|---|---|
+| Candlestick chart | OHLCV with full colour coding |
+| Indicators | MA50 (gold), MA200 (blue), Bollinger Bands (purple), toggleable |
+| Support / resistance | Click the chart with S/R mode on to place a level; click ✕ to clear |
+| Pattern detection | Doji, Hammer, Shooting Star, Morning Star, Evening Star |
+| Action markers | Golden Cross 🟢, Death Cross ⚠️, RSI > 70 🔴, RSI < 30 💚 |
+| Hover crosshair | Date badge + price badge on dashed lines |
+| OHLCV tooltip | Volume vs visible-window average %, MA50/MA200/RSI colour-coded |
+| Volume spike | Bars > 1.5× average rendered in bright gold |
+| X-axis labels | Timeframe-aware: `MM-DD` / `Mon DD` / `Mon 'YY` |
+| Timeframes | 30D / 90D / 180D / 1Y / 2Y |
 
-### AI analysis (optional)
-Set up a second private Cloudflare Worker that proxies the Anthropic Messages API. Click "Analyse latest candle" or "Morning briefing" to get a novice-friendly explanation of what's happening on the chart. Every technical term is defined inline.
+### 🌐 Live market data (optional)
 
-### Rule-based Autopilot
-A transparent, inspectable rule engine that walks day-by-day through history and applies a fixed set of trading rules. The exact rules are visible in the source. Disengage messages teach in plain language ("patience is the indicator most retail traders never use").
+Deploy the included `yahoo-proxy-worker.js` as a Cloudflare Worker (free tier). Paste its URL into the **Yahoo data URL** field and click **Refresh prices**. No API key required — Yahoo's public chart endpoint is used. The header pill flips from ⚠ SYNTHETIC to LIVE DATA.
 
-Includes optional **Smart Filter** that skips signals with a poor historical edge on the active ticker, and **envelope protection** that auto-disengages if drawdown exceeds 15% from peak.
+### 🤖 AI analysis (optional)
 
-### Progressive Web App (PWA)
-Installable on phone, tablet, or desktop. Works offline after first load. No app store, no platform lock-in.
+Deploy `trading-proxy-worker.js` as a Cloudflare Worker with your Anthropic API key stored as a Worker secret (`ANTHROPIC_API_KEY`). Paste the URL into the **AI proxy URL** field. Two modes:
 
----
+- **Analyse latest candle** — four plain-English bullets (trend, momentum, volume/patterns, what to watch tomorrow). Technical terms defined inline.
+- **Morning briefing** — a single page covering all four tickers, warm teaching tone, no jargon.
 
-## Why this exists
+API keys live exclusively in Cloudflare Worker secrets. **They never appear in the browser, in source code, or in any public file.**
 
-**Most retail traders fail because of emotional hijacking** — headlines, news cycles, FOMO, fear, gamified interfaces that reward activity. The lab refuses to participate in any of that:
+### 🔁 Replay Mode (Pillar 2)
 
-- No real-time push notifications
-- No urgency, no streaks, no XP, no leaderboards
-- No charismatic teacher to follow
-- No paywall, no subscription, no "advanced strategies" tier
-- No predictions or guarantees of any kind
+Pick any historical date from the date picker and the lab pretends that date is "today". The chart, all indicators, the autopilot, the AI analysis, the historical edge tables, and the analog engine all see only data up to the chosen date — exactly as someone living through that day would.
 
-The interface is calm. The indicators are disciplined (only MA50, MA200, RSI, volume, Bollinger Bands — no mystical Fibonacci ratios, no Gann angles, no lunar cycles). The AI explains in plain English with inline definitions of every technical term.
+- Step forward or back one trading day at a time
+- ← / → keyboard shortcuts while in replay
+- Every subsystem is automatically isolated — no data from the future leaks
+- Returns to live data with a single button click
 
-**The track record IS the source code.** Every claim about what the lab does can be verified by reading the code in this repo. Every change is dated in git. There is no opportunity to retroactively edit "predictions" after the fact.
+### 🔍 Historical Analog Engine (Pillar 3)
 
-For a fuller statement of design principles, see [ROADMAP.md](ROADMAP.md).
+For the current setup (or any replay date), scan all historical data across all four tickers for days where the same setup applied. "Setup" is defined by three categorical buckets:
 
----
+| Bucket | Categories |
+|---|---|
+| Trend | Above MA200 (uptrend) / Below MA200 (downtrend) |
+| RSI | Low < 40 / Mid 40–60 / High > 60 |
+| Volume | Normal / Spike (> 1.5× 20-day average) |
 
-## How to use
+For every match, compute the 30-day forward return. Surface: count, median return, win rate, worst/best case, and a clickable list of top analog dates. Click any date to jump Replay Mode there instantly.
 
-### Just look at it
-Open **[fjcinsa.github.io/trading-lab](https://fjcinsa.github.io/trading-lab/)**. The lab loads with synthetic data and is fully usable without any setup.
+**No black-box ML. No hallucinations. Just statistical lookup of what tended to happen in similar situations, with the full distribution shown.**
 
-### Add live market data (optional)
-Deploy `yahoo-proxy-worker.js` as a Cloudflare Worker (free tier is plenty), paste its URL into the **Yahoo data URL** field at the top of the lab, click **Refresh prices**.
+### 🧭 Rule-Based Autopilot
 
-### Add AI explanations (optional)
-Deploy `trading-proxy-worker.js` as a Cloudflare Worker, add your Anthropic API key as a Worker secret named `ANTHROPIC_API_KEY`, paste the Worker URL into the **AI proxy URL** field. Click "Analyse latest candle" or "Morning briefing".
+A transparent, inspectable trade engine that walks day-by-day through the visible window and applies a fixed set of rules:
 
-### Install as a PWA
-On phone or tablet: open the live URL in Chrome, tap the three-dot menu, choose **Install app** or **Add to Home Screen**.
+| Signal | Rule | Action |
+|---|---|---|
+| ENTER | Golden Cross (MA50 > MA200) + RSI < 65 | Buy 25% of available cash |
+| ADD | RSI bounces from oversold (< 30) while price > MA200 | Buy 15% of available cash |
+| TRIM | RSI crosses above 75 | Sell half position |
+| EXIT | Death Cross OR price > 8% below MA200 | Close full position |
+
+Every decision is logged with the exact reason in plain English. The log also annotates each decision with its historical edge statistics (fires, win rate, avg 30d return) so the user learns as they watch.
+
+**Smart Filter** (optional): skips signals with a historical win rate below 50% for that ticker.  
+**Envelope protection**: auto-disengages if drawdown exceeds 15% from peak.
+
+### 📊 Historical Edge Tables
+
+Automatically computed for every ticker: for each of the four signal types, how many times it has fired historically, what the win rate was, and the average/best/worst 30-day forward return. Updates in real time during Replay Mode so you always see the edge for the data you can see.
+
+### 📱 Progressive Web App (PWA)
+
+Installable on iPhone, Android, or desktop. Works fully offline after first load. Service worker pre-caches all files at install time.
 
 ---
 
 ## Architecture
 
 ```
-fjcinsa.github.io/trading-lab          (static GitHub Pages)
+fjcinsa.github.io/trading-lab       (static GitHub Pages — zero server cost)
    │
-   ├─► trading-lab.html                (the lab — single file, ~1900 lines)
-   │   │
-   │   ├──► trading-proxy.workers.dev  (your private Cloudflare Worker)
-   │   │       └──► api.anthropic.com  (Claude — for AI explanations)
-   │   │
-   │   └──► yahoo-proxy.workers.dev    (your private Cloudflare Worker)
-   │           └──► query1.finance.yahoo.com  (Yahoo Finance — for live OHLC)
+   ├─► trading-lab.html             (HTML shell + CSS — no inline JS)
    │
-   ├─► service-worker.js               (PWA shell, network-first for HTML)
-   ├─► manifest.json                   (PWA metadata)
-   └─► ROADMAP.md                      (vision, principles, build plan)
+   ├─► js/                          (14 ES modules, no build step)
+   │   ├── config.js                ← single source of truth for tickers + constants
+   │   ├── indicators.js            ← pure math: sma / bollinger / rsi
+   │   ├── patterns.js              ← detectPatterns / detectActions
+   │   ├── synthetic.js             ← deterministic candle generator (mulberry32 RNG)
+   │   ├── state.js                 ← shared mutable state object + persistence helpers
+   │   ├── data.js                  ← Yahoo Finance proxy fetch
+   │   ├── chart.js                 ← all Canvas 2D drawing (price / volume / RSI)
+   │   ├── edge.js                  ← historical edge computation + rendering
+   │   ├── portfolio.js             ← paper portfolio / trades / price alerts
+   │   ├── ai.js                    ← Claude API integration (analyse + briefing)
+   │   ├── autopilot.js             ← rule-based pilot engine
+   │   ├── analogs.js               ← historical analog scan + render
+   │   ├── replay.js                ← replay mode lifecycle
+   │   └── main.js                  ← orchestrator: render(), init(), bindControls()
+   │
+   ├─► service-worker.js            (PWA shell, network-first for HTML, v4)
+   ├─► manifest.json                (PWA metadata)
+   │
+   ├─► trading-proxy-worker.js      (deploy to Cloudflare — Anthropic API proxy)
+   ├─► yahoo-proxy-worker.js        (deploy to Cloudflare — Yahoo Finance proxy)
+   │
+   └─► ROADMAP.md                   (vision, principles, build plan, decision log)
 ```
 
-API keys live exclusively in Cloudflare Worker secrets. They never appear in the browser, in source code, or in any public file.
+```
+trading-lab.html
+      │
+      └── <script type="module" src="./js/main.js">
+                │
+                ├── imports config, state, indicators, synthetic
+                ├── imports edge, chart, data, portfolio, ai
+                ├── imports autopilot, analogs, replay
+                │
+                ├── render()          — redraws all three canvases + signal chips
+                ├── renderSignals()   — the chip row below the chart
+                ├── buildTabs()       — ticker tab bar
+                ├── bindControls()    — wires every button and input
+                ├── jumpToAnalog()    — enters Replay at an analog date
+                ├── init()            — seeds data, builds UI, starts clocks
+                └── initChart(render) + initReplay(render, updateYahooStatus)
+                    (dependency injection — avoids circular imports)
+```
+
+**No circular dependencies. No build step. No bundler. No framework.** ES modules run natively on GitHub Pages (HTTPS).
+
+---
+
+## Adding a new ticker
+
+Open `js/config.js`. Append one object to the `TICKERS` array:
+
+```js
+{ sym: 'NVDA', name: 'NVIDIA', exch: 'NASDAQ', ccy: 'USD', yahoo: 'NVDA', start: 900, vol: 0.030, drift: 0.002 }
+```
+
+That's it. Every subsystem — synthetic data, live fetch, chart, indicators, autopilot, historical edge, analog engine, AI prompts, portfolio, tabs — iterates over `TICKERS` automatically. Nothing else needs to change.
+
+---
+
+## Cloudflare Worker setup
+
+### Yahoo Finance proxy
+
+1. Create a new Cloudflare Worker
+2. Copy the contents of `yahoo-proxy-worker.js` into the Worker editor
+3. Deploy
+4. Paste the Worker URL into the **Yahoo data URL** field in the lab
+
+### Anthropic (Claude) proxy
+
+1. Create a new Cloudflare Worker
+2. Copy the contents of `trading-proxy-worker.js` into the Worker editor
+3. Add a secret: `ANTHROPIC_API_KEY` = your Anthropic API key
+4. Deploy
+5. Paste the Worker URL into the **AI proxy URL** field in the lab
+
+---
+
+## Running locally
+
+```bash
+git clone https://github.com/FJCinSA/trading-lab.git
+cd trading-lab
+```
+
+Then serve with any static HTTP server (ES modules require HTTP, not `file://`):
+
+```bash
+# Python 3
+python -m http.server 8080
+
+# Node.js
+npx serve .
+
+# VS Code
+# Install "Live Server" extension, right-click trading-lab.html → Open with Live Server
+```
+
+Open `http://localhost:8080/trading-lab.html`.
+
+---
+
+## Technical notes
+
+### ES module architecture (v4)
+
+The entire JavaScript codebase was refactored from a single monolithic `<script>` block (~1,966 lines) into 14 ES modules in April 2026. Key design decisions:
+
+- **`state.historicalEdge` lives on the shared state object** — not a top-level `let`. ES module live bindings cannot safely propagate a *reassigned* binding across module boundaries, but property mutations on a shared object work correctly across all importers.
+- **Dependency injection for callbacks** — `initChart(render)` and `initReplay(render, updateYahooStatus)` inject the main `render()` function into modules that need to trigger redraws. This avoids circular imports (chart.js and replay.js would otherwise need to import from main.js).
+- **Module-private autopilot state** — `autopilotState` is a `const` inside `autopilot.js`, never exported. External callers use named helpers (`isAutopilotEngaged()`, `resetAutopilotState()`).
+- **`renderAnalogs(onJump)` callback pattern** — the analog engine accepts a jump callback rather than importing `jumpToAnalog` from main.js directly.
+
+### Service worker
+
+Network-first for HTML (so users always get the latest code after a deploy), cache-first for JS modules, icons, and manifest. All 14 JS module files are pre-cached in the app shell. Bump `CACHE_VERSION` in `service-worker.js` to invalidate all stale caches on the next visit.
+
+### Synthetic data engine
+
+Deterministic Mulberry32 PRNG seeded by ticker symbol. Every user sees the same fictional history when not using live data, making it easy to discuss specific setups reproducibly.
+
+### localStorage usage
+
+Used only for: proxy URLs, indicator toggle states, paper portfolio, price alerts, support/resistance lines, autopilot log. Never for tracking or analytics. Cleared with the reset buttons in the UI.
 
 ---
 
@@ -115,41 +259,59 @@ The project follows a 7-pillar build plan. See [ROADMAP.md](ROADMAP.md) for the 
 
 | # | Pillar | Status |
 |---|---|---|
-| 1 | Live Yahoo Finance data foundation | **Shipped** |
-| 2 | Replay Mode (pick historical date, step day-by-day) | **Shipped** |
-| 3 | Historical Analog Engine (find similar setups, show outcome distributions) | **Shipped** |
-| 4 | Comparison / overlay mode | **Next** |
-| 5 | Decision Journal with weekly AI review | Planned |
-| 6 | Famous Crashes case study library | Planned |
-| 7 | Curriculum modules | Planned |
+| 1 | Live Yahoo Finance data foundation | ✅ **Shipped 29 Apr 2026** |
+| 2 | Replay Mode — pick any historical date, step day-by-day | ✅ **Shipped 30 Apr 2026** |
+| 3 | Historical Analog Engine — find similar setups, show outcome distributions | ✅ **Shipped 30 Apr 2026** |
+| — | ES module refactor — 14-module architecture, plug-and-play tickers | ✅ **Shipped 30 Apr 2026** |
+| 4 | Decision Journal with weekly AI review | 🔜 Next |
+| 5 | Comparison / overlay mode — two instruments normalised on one chart | Planned |
+| 6 | Famous Crashes case study library — 2008, 2000, 1987, COVID, etc. | Planned |
+| 7 | Curriculum modules — structured lessons with progress tracking | Planned |
 
 ---
 
-## Technical notes
+## Anti-guru principles
 
-- **Single HTML file**: the entire lab is one self-contained `trading-lab.html`. No build step, no bundler, no framework. Vanilla JavaScript and inline CSS. Editable by anyone with a text editor.
-- **No localStorage / sessionStorage abuse**: only used for user preferences (proxy URLs, indicator toggles, paper portfolio). Cleared with one button.
-- **Service worker**: network-first for HTML so users always get the latest version after a deploy; cache-first for icons and manifest. Bumping `CACHE_VERSION` in `service-worker.js` invalidates all stale caches.
-- **Synthetic data engine**: deterministic, seeded by ticker symbol so each user sees the same fictional history when not using live data.
+The retail trading-education space is full of paid "gurus" selling certainty in a domain where certainty cannot exist. This lab is the deliberate opposite:
+
+1. **Free and open source.** Read every line. No paywall. No subscription.
+2. **No predictions.** Where "prediction" appears as a feature, it is implemented as a historical analog engine showing distributions of past outcomes — *"in 47 similar setups, here is what followed"* — never *"the price will go to X"*.
+3. **No curated wins.** The autopilot's wins AND losses are shown side-by-side with the buy-and-hold benchmark.
+4. **No secret strategies.** The exact rules are in the source code.
+5. **Every technical term defined inline.** No exclusion by jargon.
+6. **No urgency, no FOMO, no notifications.** The lab is silent unless you open it.
+7. **The autopilot is rule-based and inspectable.** Every decision is logged with the plain-English reason.
+8. **Every error message teaches.** "No trades found" becomes a paragraph explaining that patience is the indicator most retail traders never use.
+9. **The lab admits when there is no signal.** Most days the market does not offer a textbook setup. The autopilot says so explicitly.
+10. **The track record IS the source code.** Every change is in git. Every commit is dated.
 
 ---
 
 ## Disclaimer
 
-This software is provided **as-is**, for **educational purposes only**. It is not a recommendation to buy or sell any security, currency, or other financial instrument. Past performance does not guarantee future results. The synthetic data is fictional. The live data may be delayed, incomplete, or inaccurate. Speak to a licensed financial advisor before making any real trading decision.
+This software is provided **as-is**, for **educational purposes only**. It is not a recommendation to buy or sell any security, currency, or other financial instrument. Past performance of any pattern, signal, or autopilot rule does not guarantee future results. The synthetic data is entirely fictional. The live data (where configured) is sourced from a public Yahoo Finance endpoint and may be delayed, incomplete, or inaccurate.
 
-The author is a medical doctor, not a financial advisor.
+**The author is a medical doctor, not a financial advisor.** Speak to a licensed financial advisor before making any real trading decision.
 
 ---
 
 ## License
 
-MIT. Use it, fork it, learn from it, build on it. Attribution appreciated but not required.
+**MIT.** Use it, fork it, learn from it, build on it. Attribution appreciated but not required.
 
 ---
 
 ## Author
 
-Built by Dr Francois Coetzee with the assistance of Claude (Anthropic). Maintained alongside other personal projects at [github.com/FJCinSA](https://github.com/FJCinSA).
+Built by **Dr Francois Coetzee** with the assistance of Claude (Anthropic).
 
-For questions or to report a bug, open a GitHub issue.
+GitHub: [github.com/FJCinSA](https://github.com/FJCinSA)  
+Maintained alongside CapnoSafe (open-source capnography for resource-limited settings) and other personal projects.
+
+Bugs and suggestions welcome — open a GitHub issue.
+
+---
+
+*"The fraud's product is loud, paywalled, opaque, and dishonest about uncertainty.*
+*This lab is quiet, free, transparent, and statistically honest.*
+*That contrast is the answer."*

@@ -2,13 +2,28 @@
 // Caches the app shell so it works offline / loads instantly on revisit.
 // Bump CACHE_VERSION any time you deploy a new version to force refresh.
 
-const CACHE_VERSION = 'fjc-trading-lab-v3';
+const CACHE_VERSION = 'fjc-trading-lab-v4';
 const APP_SHELL = [
   './',
   './index.html',
   './trading-lab.html',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  // ES module files — cache all so the app works fully offline
+  './js/config.js',
+  './js/indicators.js',
+  './js/patterns.js',
+  './js/synthetic.js',
+  './js/state.js',
+  './js/data.js',
+  './js/chart.js',
+  './js/edge.js',
+  './js/portfolio.js',
+  './js/ai.js',
+  './js/autopilot.js',
+  './js/analogs.js',
+  './js/replay.js',
+  './js/main.js'
 ];
 
 self.addEventListener('install', (event) => {

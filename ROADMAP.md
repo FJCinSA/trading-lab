@@ -1,6 +1,6 @@
 # FJC Trading Lab — Roadmap & Build Discipline
 
-**Last updated:** Tuesday, 28 April 2026 (mid-afternoon SAST)
+**Last updated:** Thursday, 30 April 2026 (modularisation refactor complete)
 **Owners:** Francois Coetzee + James Caroto-Coetzee
 **Build partner:** Claude (via Cowork mode)
 
@@ -142,6 +142,7 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 |---|---|---|
 | 30 Apr 2026 | Decision Journal (Pillar 4) promoted ahead of Comparison/Overlay (now Pillar 5) | Journal is core to the teaching mission — it is where reflection lives. Overlay is a convenience feature. The lab's thesis demands the journal exist before analysis tools multiply. |
 | 30 Apr 2026 | Pillar 6 (Famous Crashes) will require bundled historical JSON data | Yahoo Finance's 2-year limit cannot fetch 2008, 2000, or 1987. Static JSON crash datasets must be bundled in the repo before that pillar begins. |
+| 30 Apr 2026 | ES module refactor completed — trading-lab.html split into 14 JS modules | trading-lab.html was ~2368 lines with one monolithic `<script>` block. Split into 14 ES modules under `js/`: config, indicators, patterns, synthetic, state, data, chart, edge, portfolio, ai, autopilot, analogs, replay, main. No build step required — ES modules run natively on GitHub Pages (HTTPS). Adding a new ticker now means editing `js/config.js` only; everything else iterates `TICKERS` automatically. Circular dependencies avoided via dependency injection: `initChart(render)` and `initReplay(render, updateYahooStatus)` inject callbacks at boot time. `state.historicalEdge` lives on the shared state object (not a top-level `let`) so ES module live-binding constraints cannot cause stale reads. Service worker bumped to v4 and updated to pre-cache all 14 JS files. |
 | 30 Apr 2026 | File modularisation decision deferred but flagged | trading-lab.html is ~2350 lines. A split plan (ES modules or build step) is needed before Pillar 6 to avoid an unmaintainable monolith. |
 | 30 Apr 2026 | Pillar 3 (Historical Analog Engine) shipped | Bucket today's setup into trend (above/below MA200), RSI bucket, volume regime. Scan all 4 tickers' history for matches. Compute 30-day forward returns. Display: count, median, win rate, range, top-12 clickable analog list. Verified: 26 matches found for "above MA200 + RSI>60 + normal volume" with median +0.1%, win rate 54% — honest distribution showing the setup is essentially noise. Click any analog row to jump replay there. |
 | 30 Apr 2026 | Pillar 2 Phase 1 (Replay Mode MVP) shipped at ~08:20 SAST | Date picker + step day-by-day forward/back + Return to live + REPLAY pill in header + keyboard shortcuts. Chart, indicators, autopilot, AI analysis, and historical edge tables all see only data up to the replay date. Verified: TDY chart correctly truncated to 2025-09-19, indicators recomputed, pattern markers firing on real truncated history. |
@@ -158,8 +159,8 @@ Francois has asked for **regular timestamped emails** documenting progress. The 
 ## Outstanding to-do (prioritised)
 
 1. **Pillars 1–3 all shipped 29–30 April 2026.** Docs updated and committed — repo is current.
-2. **Next: Pillar 4 — Decision Journal.** Core to the lab's teaching mission. Promoted ahead of Overlay. Estimated 3–4 hours.
-3. **Before Pillar 5 (Overlay) or Pillar 6 (Crashes): plan file modularisation.** trading-lab.html is ~2350 lines. By Pillar 6 it will approach 4000. A decision is needed — either ES module refactor or a simple build step. Do not start Pillar 6 in a single HTML file.
+2. **ES module refactor shipped 30 April 2026.** trading-lab.html is now a clean HTML/CSS shell; all logic lives in `js/*.js`. Commit and deploy to GitHub Pages before starting Pillar 4.
+3. **Next: Pillar 4 — Decision Journal.** Core to the lab's teaching mission. Promoted ahead of Overlay. Estimated 3–4 hours. Adding it now means creating `js/journal.js` and wiring via main.js — the modular architecture makes this clean.
 4. **Before Pillar 6 (Famous Crashes): decide on data source.** Yahoo Finance's 2-year limit means 2008 and 1987 are not fetchable. Decision needed: bundle crash data as static JSON files in the repo before that build begins.
 5. NWU Engineering email for CapnoSafe — separate project, do not let trading-lab consume that bandwidth.
 

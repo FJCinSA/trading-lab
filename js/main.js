@@ -1,0 +1,415 @@
+// ============================================================
+// FJC Trading Lab — Main Orchestrator (Pillar 1-3 MVP)
+// ============================================================
+// This is the entry point. Its only job is to wire everything together:
+//   • imports all 13 sibling modules
+//   • owns render(), renderSignals(), buildTabs(), bindControls(),
+//     marketStatus(), updateClocks(), jumpToAnalog(), init()
+//   • injects render() + updateYahooStatus() into chart.js and replay.js
+//     so those modules can trigger redraws without importing back here
+//     (which would create circular dependencies)
+//
+// TO ADD A NEW TICKER:
+//   Edit js/config.js — append one object to TICKERS. Done.
+// ============================================================
+
+import { TICKERS, LS_PROXY, LS_YAHOO_PROXY, LS_FX } from './config.js';
+import { state, defaultPortfolio, defaultPilot,
+         savePortfolio, savePilot, saveSR }          from './state.js';
+import { sma, bollinger, rsi }                         from './indicators.js';
+import { genCandles }                                  from './synthetic.js';
+import { computeHistoricalEdge, renderHistoricalEdge } from './edge.js';
+import { initChart, drawCandles, drawVolume, drawRSI } from './chart.js';
+import { updateProxyStatus, updateYahooStatus,
+         refreshAllFromYahoo }                         from './data.js';
+import { renderPortfolio, renderAlerts, checkAlerts,
+         updateTradeTooltips, trade, addAlert }         from './portfolio.js';
+import { askClaude }                                   from './ai.js';
+import { pilotEngage, pilotDisengage, renderPilot,
+         updateAutopilotUI, isAutopilotEngaged,
+         resetAutopilotState }                         from './autopilot.js';
+import { renderAnalogs }                               from './analogs.js';
+import { initReplay, setupReplayMode, enterReplay,
+         updateReplayUI }                              from './replay.js';
+
+// ------------------------------------------------------------------
+// Core render function — redraws everything visible on screen
+// ------------------------------------------------------------------
+
+export function render() {
+  const t = TICKERS.find(x => x.sym === state.active);
+  document.getElementById('lbl-ticker').textContent = t.sym;
+
+  const all        = state.data[state.active];
+  const visible    = all.slice(-state.timeframe);
+  const allCloses  = all.map(c => c.c);
+  const sliceStart = all.length - visible.length;
+
+  // Compute full-series indicators then slice to visible window
+  const ma50full  = sma(allCloses, 50);
+  const ma200full = sma(allCloses, 200);
+  const bbFull    = bollinger(allCloses, 20, 2);
+  const rsiFull   = rsi(allCloses, 14);
+
+  const ma50  = ma50full .slice(sliceStart);
+  const ma200 = ma200full.slice(sliceStart);
+  const bbUp  = bbFull.up.slice(sliceStart);
+  const bbDn  = bbFull.dn.slice(sliceStart);
+  const rsiArr = rsiFull .slice(sliceStart);
+
+  drawCandles(visible, ma50, ma200, bbUp, bbDn, rsiArr);
+  drawVolume(visible);
+  drawRSI(rsiArr);
+
+  renderSignals(t, all, ma50full, ma200full, rsiFull);
+  renderPortfolio();
+  renderAlerts();
+  renderPilot();
+  checkAlerts();
+}
+
+// ------------------------------------------------------------------
+// Signal chips — the row of status cards below the chart
+// ------------------------------------------------------------------
+
+function renderSignals(t, all, ma50, ma200, rsiFull) {
+  const last   = all[all.length - 1];
+  const prev   = all[all.length - 2];
+  const ma50L  = ma50 [ma50 .length - 1];
+  const ma200L = ma200[ma200.length - 1];
+  const ma50P  = ma50 [ma50 .length - 2];
+  const ma200P = ma200[ma200.length - 2];
+  const rsiL   = rsiFull[rsiFull.length - 1];
+
+  const trendUp = last.c > (ma200L || 0);
+  const cross   =
+    (ma50P && ma200P && ma50L && ma200L)
+      ? (ma50P <= ma200P && ma50L > ma200L ? 'GOLDEN'
+       : ma50P >= ma200P && ma50L < ma200L ? 'DEATH'
+       : '-')
+      : '-';
+  const change    = ((last.c - prev.c) / prev.c) * 100;
+  const ccyPrefix = t.ccy === 'USD' ? '$' : 'R ';
+
+  const sig = document.getElementById('signals');
+  sig.innerHTML = '';
+
+  function chip(k, v, cls) {
+    const d = document.createElement('div');
+    d.className = 'chip ' + (cls || '');
+    d.innerHTML = '<div class="k">' + k + '</div><div class="v">' + v + '</div>';
+    return d;
+  }
+
+  sig.appendChild(chip('Last',   ccyPrefix + last.c.toFixed(2),                      change >= 0 ? 'green' : 'red'));
+  sig.appendChild(chip('Day',    (change >= 0 ? '+' : '') + change.toFixed(2) + '%', change >= 0 ? 'green' : 'red'));
+  sig.appendChild(chip('MA200',  trendUp ? 'Above (uptrend)' : 'Below (downtrend)',  trendUp     ? 'green' : 'red'));
+  sig.appendChild(chip('Cross',  cross,                                                cross === 'GOLDEN' ? 'green' : cross === 'DEATH' ? 'red' : ''));
+  sig.appendChild(chip('RSI',    rsiL ? rsiL.toFixed(0) : '-',                        rsiL > 70 ? 'red' : rsiL < 30 ? 'green' : 'gold'));
+
+  const overall = trendUp && rsiL < 70 ? 'Strong buy lean' : !trendUp && rsiL > 30 ? 'Watch / caution' : 'Mixed';
+  sig.appendChild(chip('Overall', overall, trendUp ? 'green' : 'gold'));
+}
+
+// ------------------------------------------------------------------
+// Tab bar — one button per ticker
+// ------------------------------------------------------------------
+
+function buildTabs() {
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  for (const t of TICKERS) {
+    const b = document.createElement('button');
+    b.className  = 'tab' + (state.active === t.sym ? ' active' : '');
+    b.textContent = t.sym + '  ' + t.name;
+    b.onclick = () => {
+      state.active = t.sym;
+      render();
+      buildTabs();
+      updateReplayUI();
+    };
+    tabs.appendChild(b);
+  }
+}
+
+// ------------------------------------------------------------------
+// Control bindings — wires every button, input, and toggle
+// ------------------------------------------------------------------
+
+function bindControls() {
+  // ---- Timeframe selector ----
+  document.getElementById('tf').querySelectorAll('button').forEach(b => {
+    b.onclick = () => {
+      state.timeframe = +b.dataset.tf;
+      document.querySelectorAll('#tf button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      render();
+    };
+  });
+
+  // ---- Indicator toggles ----
+  document.querySelectorAll('.toggle[data-ind]').forEach(b => {
+    b.onclick = () => {
+      const k = b.dataset.ind;
+      state.indicators[k] = !state.indicators[k];
+      b.classList.toggle('on', state.indicators[k]);
+      render();
+    };
+  });
+
+  // ---- Clear support/resistance lines ----
+  document.getElementById('clear-sr').onclick = () => {
+    state.sr[state.active] = [];
+    saveSR();
+    render();
+  };
+
+  // ---- Manual paper trading ----
+  document.getElementById('btn-buy') .onclick = () => trade(+1);
+  document.getElementById('btn-sell').onclick = () => trade(-1);
+  document.getElementById('qty').addEventListener('input',      updateTradeTooltips);
+  document.getElementById('btn-buy') .addEventListener('mouseenter', updateTradeTooltips);
+  document.getElementById('btn-sell').addEventListener('mouseenter', updateTradeTooltips);
+
+  document.getElementById('reset-portfolio').onclick = () => {
+    if (confirm('Reset paper portfolio to R100,000?')) {
+      state.portfolio = defaultPortfolio();
+      savePortfolio();
+      render();
+    }
+  };
+
+  // ---- Price alerts ----
+  document.getElementById('btn-add-alert').onclick = addAlert;
+
+  // ---- AI buttons ----
+  document.getElementById('btn-analyse') .onclick = () => askClaude('analyse');
+  document.getElementById('btn-briefing').onclick = () => askClaude('briefing');
+
+  // ---- Historical Analogs ----
+  // Pass jumpToAnalog as the callback so renderAnalogs can trigger replay
+  // without importing from main.js (which would be circular).
+  document.getElementById('btn-analogs').onclick = () => renderAnalogs(jumpToAnalog);
+
+  // ---- Autopilot ----
+  document.getElementById('ap-engage').onclick = () => {
+    if (isAutopilotEngaged()) pilotDisengage('Manual disengage by user');
+    else                      pilotEngage();
+  };
+
+  document.getElementById('pilot-reset').onclick = () => {
+    if (isAutopilotEngaged()) pilotDisengage('Reset');
+    if (confirm('Reset Autopilot to R100,000 and clear decision log?')) {
+      state.pilot = defaultPilot();
+      resetAutopilotState();   // clears peakValue, mode, currentIdx, interval handle
+      savePilot();
+      renderPilot();
+      updateAutopilotUI();
+    }
+  };
+
+  // ---- Anthropic proxy URL ----
+  document.getElementById('proxy-url').value = state.proxy;
+  document.getElementById('save-proxy').onclick = () => {
+    state.proxy = document.getElementById('proxy-url').value.trim();
+    localStorage.setItem(LS_PROXY, state.proxy);
+    updateProxyStatus();
+  };
+  updateProxyStatus();
+
+  // ---- Yahoo Finance proxy URL + Refresh button ----
+  document.getElementById('yahoo-url').value = state.yahooProxy;
+  document.getElementById('save-yahoo').onclick = () => {
+    state.yahooProxy = document.getElementById('yahoo-url').value.trim();
+    localStorage.setItem(LS_YAHOO_PROXY, state.yahooProxy);
+    updateYahooStatus();
+  };
+  document.getElementById('refresh-yahoo').onclick = () => {
+    refreshAllFromYahoo(_onYahooSuccess);
+  };
+  updateYahooStatus();
+
+  // ---- USD/ZAR FX rate ----
+  const fxEl = document.getElementById('fx-rate');
+  if (fxEl) fxEl.value = state.fxUsdZar.toFixed(2);
+  document.getElementById('save-fx').onclick = () => {
+    const v = parseFloat(document.getElementById('fx-rate').value);
+    if (!isNaN(v) && v > 1) {
+      state.fxUsdZar = v;
+      localStorage.setItem(LS_FX, v.toFixed(2));
+      render();
+    }
+  };
+}
+
+// ------------------------------------------------------------------
+// Yahoo success callback — recompute edge + full redraw
+// ------------------------------------------------------------------
+
+function _onYahooSuccess() {
+  state.historicalEdge = computeHistoricalEdge();
+  render();
+  renderHistoricalEdge();
+}
+
+// ------------------------------------------------------------------
+// Replay — jump to an analog date
+// ------------------------------------------------------------------
+
+/**
+ * Switch the active ticker to `ticker` and enter Replay Mode at `date`.
+ * Called from analogs.js via the onJump callback passed to renderAnalogs().
+ *
+ * @param {string} ticker  - e.g. 'TDY'
+ * @param {string} date    - ISO date string e.g. '2023-07-14'
+ */
+function jumpToAnalog(ticker, date) {
+  // Switch to the right ticker first
+  if (state.active !== ticker) {
+    state.active = ticker;
+    buildTabs();
+  }
+
+  // Use the untruncated data for index lookup, whether or not replay is already active
+  const fullData = state._replayBackup ? state._replayBackup : state.data;
+
+  // Build a per-ticker index map anchored to the same calendar date
+  const idx = {};
+  for (const t of TICKERS) {
+    const arr = fullData[t.sym] || [];
+    let found = -1;
+    for (let i = arr.length - 1; i >= 0; i--) {
+      if (arr[i].d <= date) { found = i; break; }
+    }
+    idx[t.sym] = Math.max(50, found >= 0 ? found : arr.length - 1);
+  }
+
+  // Validate: the target ticker must have enough history
+  const targetArr = fullData[ticker] || [];
+  let targetFound = -1;
+  for (let i = targetArr.length - 1; i >= 0; i--) {
+    if (targetArr[i].d <= date) { targetFound = i; break; }
+  }
+  if (targetFound < 0) {
+    alert('No data on or before ' + date + ' for ' + ticker + '.');
+    return;
+  }
+  if (targetFound < 50) {
+    alert('Date is too early — need at least 50 prior candles for indicators.');
+    return;
+  }
+
+  // enterReplay handles: backup, slicing state.data, historicalEdge recompute, render(), updateReplayUI()
+  enterReplay(idx);
+}
+
+// ------------------------------------------------------------------
+// Market status (NYSE + JSE open/closed, UTC-based)
+// ------------------------------------------------------------------
+
+function marketStatus() {
+  const now    = new Date();
+  const day    = now.getDay();
+  const weekend = (day === 0 || day === 6);
+  const utcMin  = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const nyseOpen = !weekend && utcMin >= 13 * 60 + 30 && utcMin <= 20 * 60;
+  const jseOpen  = !weekend && utcMin >= 7 * 60        && utcMin <= 15 * 60;
+  return { nyse: nyseOpen, jse: jseOpen };
+}
+
+function updateClocks() {
+  const now = new Date();
+  document.getElementById('now').textContent = now.toLocaleString();
+  const m = marketStatus();
+  const n = document.getElementById('nyse-status');
+  const j = document.getElementById('jse-status');
+  n.textContent  = m.nyse ? 'OPEN' : 'CLOSED';
+  n.style.color  = m.nyse ? 'var(--green)' : 'var(--red)';
+  j.textContent  = m.jse  ? 'OPEN' : 'CLOSED';
+  j.style.color  = m.jse  ? 'var(--green)' : 'var(--red)';
+}
+
+// ------------------------------------------------------------------
+// App bootstrap
+// ------------------------------------------------------------------
+
+function init() {
+  // Seed synthetic data for every ticker
+  for (const t of TICKERS) state.data[t.sym] = genCandles(t);
+
+  // Compute initial historical edge (before any live data arrives)
+  state.historicalEdge = computeHistoricalEdge();
+
+  buildTabs();
+  bindControls();
+  updateClocks();
+  setInterval(updateClocks, 30000);
+  render();
+  renderHistoricalEdge();
+  updateAutopilotUI();
+  updateTradeTooltips();
+}
+
+// ------------------------------------------------------------------
+// Tooltip edge guard
+// ------------------------------------------------------------------
+// Shift data-tip tooltips horizontally so they never clip off the
+// right (or left) edge of the viewport on narrow screens.
+// The handler measures the trigger's position and nudges a CSS variable
+// that the tooltip pseudo-element reads via transform: translateX(…).
+
+(function tooltipEdgeGuard() {
+  const TIP_MAX = 280;  // matches max-width in CSS
+  const MARGIN  = 12;   // breathing room from viewport edge
+  document.addEventListener('mouseover', (e) => {
+    const el = e.target.closest && e.target.closest('[data-tip]');
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const triggerCenter = r.left + r.width / 2;
+    const halfTip = TIP_MAX / 2;
+    const vw = window.innerWidth;
+    let offset = 0;
+    if (triggerCenter - halfTip < MARGIN) {
+      offset = MARGIN - (triggerCenter - halfTip);         // nudge right
+    } else if (triggerCenter + halfTip > vw - MARGIN) {
+      offset = (vw - MARGIN) - (triggerCenter + halfTip); // nudge left
+    }
+    el.style.setProperty('--tip-offset-x', offset + 'px');
+  });
+})();
+
+// ------------------------------------------------------------------
+// Service worker (PWA / offline cache)
+// ------------------------------------------------------------------
+
+if ('serviceWorker' in navigator &&
+    (location.protocol === 'http:' || location.protocol === 'https:')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg  => console.log('[FJC Lab] Service worker registered, scope:', reg.scope))
+      .catch(err => console.warn('[FJC Lab] Service worker registration failed:', err));
+  });
+}
+
+// ------------------------------------------------------------------
+// Wire dependency injections, then start
+// ------------------------------------------------------------------
+
+// chart.js needs render() so its canvas event handlers (mouseleave,
+// S/R onclick, crosshair) can trigger a full redraw without importing
+// from main.js (which would be a circular dependency).
+initChart(render);
+
+// replay.js needs both render() and updateYahooStatus() so it can
+// trigger redraws and restore the Yahoo status pill on exitReplay().
+initReplay(render, updateYahooStatus);
+
+// Redraw on every window resize so the canvas fills its container correctly
+window.addEventListener('resize', () => render());
+
+// Boot the app
+init();
+setupReplayMode();
+
+// Auto-fetch live prices if the user already has a Yahoo proxy configured
+if (state.yahooProxy) refreshAllFromYahoo(_onYahooSuccess);
