@@ -183,6 +183,19 @@
     border-top-color:transparent;
     border-bottom-color:var(--gold);
   }
+  /* ---- Famous Crashes (Pillar 6) -------------------------------- */
+  .crash-card{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s}
+  .crash-card:hover{border-color:var(--gold);background:rgba(201,168,76,.08)}
+  .crash-card:last-child{margin-bottom:0}
+  .crash-card-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .crash-name{font-weight:700;font-size:13px;color:var(--text);flex:1}
+  .crash-ticker-badge{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.3px}
+  .crash-subtitle{font-size:11px;color:var(--muted)}
+  #crash-context-panel{background:var(--panel);border:1px solid var(--gold);border-radius:12px;margin:0 12px 10px;padding:16px}
+  #crash-context-title{font:600 14px/1.3 'Playfair Display',Georgia,serif;color:var(--gold)}
+  #crash-context-body{font-size:13px;color:var(--text);line-height:1.7;max-height:210px;overflow-y:auto;margin-top:10px}
+  #crash-context-body p{margin:0 0 10px 0}
+  #crash-context-body p:last-child{margin-bottom:0}
 </style>
 </head>
 <body>
@@ -208,7 +221,7 @@
   <span data-tip="Cloudflare Worker that fetches real OHLC data from Yahoo Finance. Once set, click 'Refresh prices' to replace the synthetic data with the latest live candles for all four tickers. Falls back silently to synthetic if the fetch fails.">Yahoo data URL:</span>
   <input id="yahoo-url" placeholder="https://yahoo-proxy.your-subdomain.workers.dev/" />
   <button class="btn" id="save-yahoo">Save</button>
-  <button class="btn gold" id="refresh-yahoo" disabled data-tip="Pull the latest 2 years of daily candles for TDY, TSLA, SOL.JO and MNST from Yahoo Finance via your proxy. Replaces the synthetic data engine with real market data.">Refresh prices</button>
+  <button class="btn gold" id="refresh-yahoo" disabled data-tip="Pull the full available daily history for all tickers from Yahoo Finance via your proxy. Replaces synthetic data with real market data and enables Famous Crashes case studies.">Refresh prices</button>
   <span id="data-status">synthetic data</span>
   <span style="margin-left:8px" data-tip="USD/ZAR exchange rate used to convert TDY, TSLA and MNST prices into your ZAR paper portfolio. Update this when the rate moves — stale rate means stale P&amp;L.">USD/ZAR:</span>
   <input id="fx-rate" type="number" step="0.01" min="1" style="width:72px;padding:4px 8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:12px" />
@@ -226,6 +239,25 @@
 </div>
 
 <div class="tabs" id="tabs"></div>
+
+<!-- ============================================================ -->
+<!-- Crash context panel — shown when a case study is active      -->
+<!-- Hidden by default; crashes.js shows it via showCrashContext() -->
+<!-- ============================================================ -->
+<div id="crash-context-panel" style="display:none">
+  <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+    <span id="crash-context-title"></span>
+    <span class="grow" style="flex:1"></span>
+    <button class="btn" id="crash-context-close" style="flex-shrink:0">✕ Close</button>
+  </div>
+  <div id="crash-context-body"></div>
+  <p style="margin:10px 0 0;font-size:11px;color:var(--muted)">
+    🎓 <b style="color:var(--gold)">Replay Mode is active.</b>
+    Use ◀ ▶ in the replay bar above to step through history day-by-day.
+    The chart, AI analysis, autopilot, and journal only see data up to the replay date —
+    exactly as a trader at the time would have seen it. Use the journal to record every decision.
+  </p>
+</div>
 
 <div class="layout">
 
@@ -252,10 +284,7 @@
           <select id="overlay-sym" class="btn" style="font-size:12px;padding:5px 8px"
             data-tip="Overlay a second ticker as a normalised % return line. Both are rebased to 100 at the start of the window so you can compare relative performance directly.">
             <option value="">Compare vs…</option>
-            <option value="TDY">vs TDY</option>
-            <option value="TSLA">vs TSLA</option>
-            <option value="SOL">vs SOL</option>
-            <option value="MNST">vs MNST</option>
+            <!-- Options populated dynamically from TICKERS in main.js bindControls() -->
           </select>
         </div>
       </div>
@@ -434,6 +463,22 @@
         The AI Review reads your last 14 days and looks for patterns.
       </p>
       <div id="journal-entries"></div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- Pillar 6 — Famous Crashes Case Study Library                  -->
+    <!-- ============================================================ -->
+    <div class="card" id="crashes-card" style="margin-top:12px">
+      <h3 style="margin:0 0 4px">Famous Crashes</h3>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+        Re-live a market crash day-by-day with no hindsight.
+        Each scenario loads the full historical data and enters Replay Mode
+        at the onset of the event. Make decisions, use the AI coach, and
+        keep a journal — exactly as you would on a live chart.
+        Requires your Yahoo proxy URL to be configured.
+      </p>
+      <div id="crash-loading" style="display:none;font-size:12px;color:var(--gold);padding:4px 0 8px"></div>
+      <div id="crashes-list"></div>
     </div>
 
   </div>

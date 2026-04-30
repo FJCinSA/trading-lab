@@ -22,7 +22,7 @@ import { computeHistoricalEdge, renderHistoricalEdge } from './edge.js';
 import { initChart, drawCandles, drawVolume, drawRSI,
          drawOverlay }                                  from './chart.js';
 import { updateProxyStatus, updateYahooStatus,
-         refreshAllFromYahoo }                         from './data.js';
+         refreshAllFromYahoo, fetchYahoo }             from './data.js';
 import { renderPortfolio, renderAlerts, checkAlerts,
          updateTradeTooltips, trade, addAlert }         from './portfolio.js';
 import { askClaude }                                   from './ai.js';
@@ -33,6 +33,7 @@ import { renderAnalogs }                               from './analogs.js';
 import { initReplay, setupReplayMode, enterReplay,
          updateReplayUI }                              from './replay.js';
 import { addJournalEntry, renderJournal, clearJournal } from './journal.js';
+import { renderCrashes, showCrashContext }              from './crashes.js';
 
 // ------------------------------------------------------------------
 // Core render function — redraws everything visible on screen
@@ -253,6 +254,19 @@ function bindControls() {
   // ---- Decision Journal ----
   document.getElementById('btn-clear-journal').onclick = clearJournal;
 
+  // ---- Overlay options — built dynamically from TICKERS so adding a ticker
+  //      to config.js automatically adds it here (no HTML edit required) ----
+  const overlaySel = document.getElementById('overlay-sym');
+  if (overlaySel) {
+    while (overlaySel.options.length > 1) overlaySel.remove(1); // keep placeholder
+    for (const t of TICKERS) {
+      const opt = document.createElement('option');
+      opt.value = t.sym;
+      opt.textContent = 'vs ' + t.sym;
+      overlaySel.appendChild(opt);
+    }
+  }
+
   // ---- Overlay comparison (Pillar 5) ----
   document.getElementById('overlay-sym').onchange = (e) => {
     const sel = e.target.value;
@@ -379,6 +393,76 @@ function jumpToAnalog(ticker, date) {
 }
 
 // ------------------------------------------------------------------
+// Famous Crashes — activate a case study scenario (Pillar 6)
+// ------------------------------------------------------------------
+
+/**
+ * Fetch full historical data for a crash scenario ticker, position
+ * Replay Mode at the crash start date, and show the context panel.
+ * Called by the scenario cards rendered by crashes.js.
+ *
+ * @param {object} scenario  one entry from CRASH_SCENARIOS
+ */
+async function jumpToCrash(scenario) {
+  if (!state.yahooProxy) {
+    alert(
+      'Crash case studies require live Yahoo Finance data.\n\n' +
+      'Configure your Yahoo proxy URL in the Settings section below, ' +
+      'then click a scenario again.'
+    );
+    return;
+  }
+
+  // Disengage autopilot if it is running — it should not trade during a study
+  if (isAutopilotEngaged()) pilotDisengage('Starting crash case study');
+
+  // Show loading status inside the card
+  const loadEl = document.getElementById('crash-loading');
+  if (loadEl) {
+    loadEl.textContent = 'Loading ' + scenario.ticker + ' full history — one moment…';
+    loadEl.style.display = '';
+  }
+
+  try {
+    // fetchYahoo now uses range=max so this returns the full available history
+    const candles = await fetchYahoo(scenario.ticker);
+    state.data[scenario.ticker] = candles;
+  } catch (e) {
+    alert('Failed to load ' + scenario.ticker + ' data:\n' + (e && e.message || e));
+    if (loadEl) loadEl.style.display = 'none';
+    return;
+  }
+
+  if (loadEl) loadEl.style.display = 'none';
+
+  // Verify the data actually covers the scenario start date
+  const candles = state.data[scenario.ticker];
+  const startIdx = candles.findIndex(c => c.d >= scenario.startDate);
+  if (startIdx < 50) {
+    const earliest = candles.length > 0 ? candles[0].d : 'unknown';
+    alert(
+      'Not enough historical data for ' + scenario.name + '.\n\n' +
+      'Yahoo Finance data for ' + scenario.ticker + ' starts on ' + earliest + '.\n' +
+      'Need data covering ' + scenario.startDate + ' with at least 50 prior candles.'
+    );
+    return;
+  }
+
+  // Switch to the crash ticker and rebuild the tab bar
+  if (state.active !== scenario.ticker) {
+    state.active = scenario.ticker;
+    buildTabs();
+  }
+
+  // Show the setting-the-scene context panel above the chart
+  showCrashContext(scenario);
+
+  // Jump replay to the crash onset — uses jumpToAnalog which handles
+  // the full replay index build, state backup, and render() call
+  jumpToAnalog(scenario.ticker, scenario.startDate);
+}
+
+// ------------------------------------------------------------------
 // Market status (NYSE + JSE open/closed, UTC-based)
 // ------------------------------------------------------------------
 
@@ -423,6 +507,7 @@ function init() {
   renderHistoricalEdge();
   updateAutopilotUI();
   updateTradeTooltips();
+  renderCrashes(jumpToCrash);
 }
 
 // ------------------------------------------------------------------

@@ -22,7 +22,11 @@ export const TICKERS = [
   { sym:'TDY',  name:'Teledyne Technologies', exch:'NYSE',   ccy:'USD', yahoo:'TDY',    start:580, vol:0.018, drift: 0.0015 },
   { sym:'TSLA', name:'Tesla',                 exch:'NYSE',   ccy:'USD', yahoo:'TSLA',   start:250, vol:0.038, drift: 0.0000 },
   { sym:'SOL',  name:'Sasol',                 exch:'JSE',    ccy:'ZAR', yahoo:'SOL.JO', start:120, vol:0.030, drift:-0.0005 },
-  { sym:'MNST', name:'Monster Beverage',      exch:'NASDAQ', ccy:'USD', yahoo:'MNST',   start:58,  vol:0.020, drift: 0.0008 }
+  { sym:'MNST', name:'Monster Beverage',      exch:'NASDAQ', ccy:'USD', yahoo:'MNST',   start:58,  vol:0.020, drift: 0.0008 },
+  // --- Crash Case Study tickers (Pillar 6) — full history loaded via range=max ---
+  { sym:'SPY',  name:'SPDR S&P 500 ETF',     exch:'NYSE',   ccy:'USD', yahoo:'SPY',    start:450, vol:0.011, drift: 0.0003 },
+  { sym:'META', name:'Meta Platforms',        exch:'NASDAQ', ccy:'USD', yahoo:'META',   start:450, vol:0.028, drift: 0.0004 },
+  { sym:'QQQ',  name:'Nasdaq 100 ETF',        exch:'NASDAQ', ccy:'USD', yahoo:'QQQ',    start:380, vol:0.016, drift: 0.0004 }
 ];
 
 // localStorage keys — versioned so a schema change doesn't corrupt old data

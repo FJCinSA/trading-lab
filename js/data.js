@@ -54,8 +54,8 @@ export function updateYahooStatus() {
 // ------------------------------------------------------------------
 
 /**
- * Fetch 2 years of daily OHLCV candles for one ticker from the user's
- * Yahoo Finance Cloudflare Worker proxy.
+ * Fetch the full available history of daily OHLCV candles for one ticker
+ * from the user's Yahoo Finance Cloudflare Worker proxy (range=max).
  *
  * Returns an array of { d, o, h, l, c, v } objects — same shape as
  * the synthetic data engine, so the rest of the app is data-source agnostic.
@@ -70,7 +70,7 @@ export async function fetchYahoo(ticker) {
   if (!t.yahoo) throw new Error('No Yahoo symbol mapping for ' + ticker);
 
   const base = state.yahooProxy.replace(/\/$/, '');
-  const url  = base + '/?symbol=' + encodeURIComponent(t.yahoo) + '&range=2y&interval=1d';
+  const url  = base + '/?symbol=' + encodeURIComponent(t.yahoo) + '&range=max&interval=1d';
   const resp = await fetch(url);
   if (!resp.ok) {
     const text = await resp.text();
