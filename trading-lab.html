@@ -632,6 +632,7 @@
   .rr-sizer-result{margin-top:8px;display:flex;flex-direction:column;gap:4px}
   #ps-max-shares{font-weight:800}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -676,6 +677,12 @@
     <span style="margin-left:8px" data-tip="USD/ZAR exchange rate used to convert TDY, TSLA and MNST prices into your ZAR paper portfolio. Update this when the rate moves — stale rate means stale P&amp;L.">USD/ZAR:</span>
     <input id="fx-rate" type="number" step="0.01" min="1" style="width:72px;padding:4px 8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:12px" />
     <button class="btn" id="save-fx">Save</button>
+  </div>
+
+  <div class="config-bar" style="align-items:flex-start;gap:20px">
+    <span style="padding-top:4px">📱 Open on phone:</span>
+    <div id="app-qr" style="background:#fff;padding:6px;border-radius:6px;display:inline-block;line-height:0"></div>
+    <span style="font-size:11px;color:var(--muted);padding-top:4px;max-width:320px">Scan with your phone camera to open the Trading Lab on any device — no install required.</span>
   </div>
 
 </details>
@@ -3279,5 +3286,21 @@ if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.p
     font-family:Inter,system-ui,monospace;
   }
 </style>
+<script>
+  // Generate QR code for the app URL — runs after qrcode.js is loaded
+  window.addEventListener('DOMContentLoaded', function() {
+    var el = document.getElementById('app-qr');
+    if (el && typeof QRCode !== 'undefined') {
+      new QRCode(el, {
+        text:   'https://fjcinsa.github.io/trading-lab/trading-lab.html',
+        width:  120,
+        height: 120,
+        colorDark:  '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+  });
+</script>
 </body>
 </html>
