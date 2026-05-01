@@ -17,6 +17,17 @@ import { TICKERS, HIST_FORWARD_DAYS } from './config.js';
 import { state }                       from './state.js';
 import { sma, rsi }                    from './indicators.js';
 
+// Memoization cache — edge computation is expensive (full-history scan of all
+// 24 tickers). Results are deterministic for a given dataset, so cache the last
+// result and return it immediately if the data hasn't changed.
+let _edgeCache    = null;
+let _edgeCacheKey = '';
+
+/** Build a cache key from the data lengths + mode of every ticker. */
+function _edgeKey() {
+  return state.dataMode + ':' + TICKERS.map(t => (state.data[t.sym] || []).length).join(',');
+}
+
 /**
  * Scan all tickers in state.data and compute historical win/loss stats
  * for each of the four signal types: ENTER, ADD, TRIM, EXIT.
@@ -24,9 +35,13 @@ import { sma, rsi }                    from './indicators.js';
  * Signal definitions mirror the autopilot rules exactly so the edge
  * statistics are directly comparable to autopilot decisions.
  *
+ * Result is memoized — recomputed only when underlying data changes.
+ *
  * @returns {{ [sym: string]: { ENTER, ADD, TRIM, EXIT } }} edge stats object
  */
 export function computeHistoricalEdge() {
+  const key = _edgeKey();
+  if (_edgeCache && key === _edgeCacheKey) return _edgeCache;
   const edges = {};
 
   for (const t of TICKERS) {
@@ -100,6 +115,8 @@ export function computeHistoricalEdge() {
     }
   }
 
+  _edgeCache    = edges;
+  _edgeCacheKey = key;
   return edges;
 }
 

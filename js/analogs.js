@@ -59,13 +59,24 @@ function bucketsMatch(a, b) {
 // Core scan
 // ------------------------------------------------------------------
 
+// Memoization cache — analog scan is O(n²) across all ticker histories.
+// The result depends only on the active ticker, its data length, and the
+// data mode. Cache and return immediately if nothing has changed.
+let _analogCache    = null;
+let _analogCacheKey = '';
+
 /**
  * Find all historical days across all tickers that match the current
  * setup bucket. Returns an error string or a result object.
  *
+ * Result is memoized — recomputed only when the active ticker or data changes.
+ *
  * @returns {{ error: string } | { current, currentTicker, currentDate, matches[] }}
  */
 export function findAnalogs() {
+  // Key includes active ticker, its data length, and the overall data mode
+  const key = state.active + ':' + (state.data[state.active] || []).length + ':' + state.dataMode;
+  if (_analogCache && key === _analogCacheKey) return _analogCache;
   const cur = state.data[state.active] || [];
   if (cur.length < 230) {
     return { error: 'Not enough history yet — need at least 230 candles for MA200 and a 30-day forward window.' };
@@ -80,7 +91,9 @@ export function findAnalogs() {
   const curBuckets = bucketSetup(curCloses, curMa200, curRsi, curVolumes, curIdx);
 
   if (!curBuckets) {
-    return { error: 'Indicators are not yet computable for the current setup.' };
+    const errResult = { error: 'Indicators are not yet computable for the current setup.' };
+    _analogCache = errResult; _analogCacheKey = key;
+    return errResult;
   }
 
   const matches = [];
@@ -118,7 +131,10 @@ export function findAnalogs() {
     }
   }
 
-  return { current: curBuckets, currentTicker: state.active, currentDate: curDate, matches };
+  const result = { current: curBuckets, currentTicker: state.active, currentDate: curDate, matches };
+  _analogCache    = result;
+  _analogCacheKey = key;
+  return result;
 }
 
 // ------------------------------------------------------------------

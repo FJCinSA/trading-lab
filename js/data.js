@@ -10,8 +10,8 @@
 // data loads, without data.js needing to import main.js.
 // ============================================================
 
-import { TICKERS, LS_PROXY, LS_YAHOO_PROXY } from './config.js';
-import { state }                               from './state.js';
+import { TICKERS, LS_PROXY, LS_YAHOO_PROXY, LS_FX } from './config.js';
+import { state }                                      from './state.js';
 
 // ------------------------------------------------------------------
 // Status indicator helpers (update the DOM labels/pills)
@@ -132,8 +132,23 @@ export async function refreshAllFromYahoo(onSuccess) {
   try {
     const results = await Promise.all(TICKERS.map(t => fetchYahoo(t.sym)));
     TICKERS.forEach((t, i) => { state.data[t.sym] = results[i]; });
-    state.dataMode  = 'live';
+    state.dataMode   = 'live';
     state.liveDataAt = new Date();
+
+    // Auto-update the USD/ZAR rate from the live USDZAR fetch so portfolio
+    // ZAR valuations always reflect the real exchange rate without manual input.
+    // USDZAR=X is in the TICKERS list and just fetched — its closing price
+    // IS the current USD/ZAR rate (e.g. 18.72). Sanity-checked 5–60 to guard
+    // against stale/bad data being written as the conversion rate.
+    const zarCandles = state.data['USDZAR'];
+    if (zarCandles && zarCandles.length > 0) {
+      const liveRate = zarCandles[zarCandles.length - 1].c;
+      if (liveRate > 5 && liveRate < 60) {
+        state.fxUsdZar = liveRate;
+        localStorage.setItem(LS_FX, String(liveRate));
+      }
+    }
+
     updateYahooStatus();
     if (onSuccess) onSuccess();
   } catch (e) {

@@ -44,6 +44,38 @@ import { renderCurriculum, closeLesson }               from './curriculum.js';
 // ------------------------------------------------------------------
 
 export function render() {
+  try {
+    _renderInner();
+    // If a previous crash banner was showing, hide it on successful render
+    const prev = document.getElementById('render-error');
+    if (prev) prev.style.display = 'none';
+  } catch (err) {
+    console.error('[FJC Lab] render() crashed:', err);
+    // Surface a readable banner so the screen is never silently blank
+    let overlay = document.getElementById('render-error');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'render-error';
+      overlay.style.cssText =
+        'position:fixed;top:0;left:0;right:0;z-index:9999;' +
+        'background:#1a0808;border-bottom:2px solid #e0524d;' +
+        'padding:12px 20px;font-family:monospace;font-size:13px;color:#f0e6c8';
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML =
+      '<b style="color:#e0524d">⚠ FJC Lab — render error</b>: ' +
+      (err && err.message ? err.message : String(err)) +
+      ' <span style="color:#8a94a8;font-size:11px">' +
+        '— open DevTools console for full stack · reload to recover' +
+      '</span>' +
+      '<button onclick="this.parentElement.style.display=\'none\'" ' +
+        'style="float:right;background:none;border:1px solid #555;' +
+        'color:#888;cursor:pointer;padding:2px 8px;border-radius:3px">×</button>';
+    overlay.style.display = '';
+  }
+}
+
+function _renderInner() {
   const t = TICKERS.find(x => x.sym === state.active);
   document.getElementById('lbl-ticker').textContent = t.sym;
 
