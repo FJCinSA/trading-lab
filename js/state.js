@@ -19,7 +19,7 @@ import { TICKERS, LS_PORTFOLIO, LS_ALERTS, LS_PROXY, LS_SR,
 // ------------------------------------------------------------------
 
 export function defaultPortfolio() {
-  return { cash: 100000, positions: {} };
+  return { cash: 100000, positions: {}, history: [{ date: new Date().toISOString().slice(0,10), total: 100000 }] };
 }
 
 export function defaultPilot() {

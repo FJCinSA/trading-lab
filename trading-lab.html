@@ -149,6 +149,23 @@
   .ap-speed select{background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--text);padding:2px 4px;margin-left:4px;font-size:10px}
   .ap-progress{height:3px;background:var(--line);border-radius:2px;margin:6px 0;overflow:hidden}
   .ap-progress > div{height:100%;background:var(--gold);width:0%;transition:width .15s}
+  /* ── Instrument search autocomplete dropdown ── */
+  #search-wrap{position:relative;flex:1;min-width:220px}
+  #instrument-dropdown{
+    display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
+    background:var(--panel);border:1px solid var(--gold);border-radius:8px;
+    z-index:500;max-height:320px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.6)
+  }
+  .inst-opt{
+    padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line);display:flex;
+    align-items:flex-start;gap:10px
+  }
+  .inst-opt:last-child{border-bottom:none}
+  .inst-opt:hover,.inst-opt.focused{background:var(--panel-2)}
+  .inst-opt-sym{font-weight:800;font-size:13px;color:var(--gold);width:72px;flex-shrink:0;line-height:1.3}
+  .inst-opt-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .inst-opt-desc{font-size:11px;color:var(--muted);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .inst-opt-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
   /* Hover tooltips - teaching layer */
   [data-tip]{position:relative}
   [data-tip]:hover::after{
@@ -239,18 +256,400 @@
   #crash-context-body p:last-child{margin-bottom:0}
   #price-chart{cursor:grab}
   #price-chart:active{cursor:grabbing}
+
+  /* ================================================================
+     CINEMATIC LAYER — Every element flows. Every transition lands.
+     ================================================================ */
+
+  /* ── Deep background ── */
+  html,body{
+    background:
+      radial-gradient(ellipse 90% 50% at 50% -10%, rgba(25,40,80,.6) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 90% 90%, rgba(201,168,76,.04) 0%, transparent 60%),
+      #080e1a;
+    min-height:100vh;
+  }
+
+  /* Subtle gold grid overlay — creates depth without noise */
+  body::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(rgba(201,168,76,.018) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(201,168,76,.018) 1px,transparent 1px);
+    background-size:56px 56px;
+  }
+
+  /* Everything above the grid */
+  header,#instrument-search-bar,#ticker-info-strip,.tabs,#tabs,
+  .layout,.footer,details,#crash-context-panel,#lesson-modal{
+    position:relative;z-index:1;
+  }
+
+  /* ── Header — cinematic gold ── */
+  header{
+    background:linear-gradient(90deg,rgba(8,14,26,.98) 0%,rgba(16,26,48,.98) 50%,rgba(8,14,26,.98) 100%);
+    border-bottom:1px solid rgba(201,168,76,.25);
+    box-shadow:0 2px 40px rgba(0,0,0,.7),0 1px 0 rgba(201,168,76,.12);
+    padding:12px 20px;
+  }
+
+  /* Animated gold shimmer on the logo */
+  header h1{
+    font-size:19px;letter-spacing:4px;
+    background:linear-gradient(90deg,#8a6820 0%,#c9a84c 25%,#f0d878 50%,#c9a84c 75%,#8a6820 100%);
+    background-size:300% auto;
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    animation:logoShimmer 5s linear infinite;
+    margin:0;
+  }
+
+  @keyframes logoShimmer{0%{background-position:0% center}100%{background-position:300% center}}
+
+  /* Tagline under the logo */
+  header .tagline{
+    font-size:10px;color:rgba(201,168,76,.5);letter-spacing:2.5px;
+    text-transform:uppercase;margin-top:2px;font-family:'Playfair Display',Georgia,serif;
+  }
+
+  /* ── Cards — layered depth ── */
+  .card{
+    background:linear-gradient(160deg,rgba(15,24,40,1) 0%,rgba(10,17,32,1) 100%);
+    border:1px solid rgba(29,44,74,.9);
+    box-shadow:0 4px 24px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.025) inset;
+    transition:box-shadow .3s ease,border-color .3s ease,transform .25s ease;
+  }
+  .card:hover{
+    box-shadow:0 8px 36px rgba(0,0,0,.55),0 0 0 1px rgba(201,168,76,.14);
+    border-color:rgba(201,168,76,.22);
+  }
+
+  /* ── Ticker tabs ── */
+  .tab{
+    transition:all .2s ease;
+    position:relative;overflow:hidden;
+  }
+  /* Shimmer sweep on hover */
+  .tab::before{
+    content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+    transform:skewX(-20deg);transition:left .5s ease;pointer-events:none;
+  }
+  .tab:hover::before{left:130%;}
+  .tab.active{
+    background:linear-gradient(135deg,#b8932a,#c9a84c 45%,#e0c060 55%,#c9a84c);
+    box-shadow:0 0 18px rgba(201,168,76,.45),0 2px 8px rgba(0,0,0,.35);
+    border-color:transparent;color:#100a00;
+  }
+
+  /* ── Buttons ── */
+  .btn{transition:all .15s ease;}
+  .btn:active{transform:scale(.96);}
+  .btn:hover{border-color:rgba(201,168,76,.3);}
+  .btn.gold{
+    background:linear-gradient(135deg,#a87828 0%,#c9a84c 40%,#dfc060 55%,#c9a84c 100%);
+    background-size:200% auto;
+    box-shadow:0 2px 10px rgba(0,0,0,.3);
+    border-color:transparent;
+    transition:all .25s ease;
+  }
+  .btn.gold:hover{
+    background-position:right center;
+    box-shadow:0 0 22px rgba(201,168,76,.55),0 4px 14px rgba(0,0,0,.35);
+    transform:translateY(-1px);
+  }
+  .btn.buy:hover { box-shadow:0 0 18px rgba(38,169,108,.4);transform:translateY(-1px);}
+  .btn.sell:hover{ box-shadow:0 0 18px rgba(224,82,77,.4); transform:translateY(-1px);}
+
+  /* ── Toggle buttons ── */
+  .toggle{transition:all .2s ease;}
+  .toggle.on{box-shadow:0 0 10px rgba(240,230,200,.15);}
+  .toggle.events.on{box-shadow:0 0 10px rgba(90,168,255,.25);}
+  .toggle.actions.on{box-shadow:0 0 10px rgba(201,168,76,.25);}
+  .toggle:hover{border-color:rgba(201,168,76,.3);color:var(--text);}
+
+  /* Timeframe buttons */
+  .timeframe button{transition:all .2s ease;}
+  .timeframe button.on{
+    background:linear-gradient(135deg,#b8932a,#c9a84c);
+    box-shadow:0 0 10px rgba(201,168,76,.3);border-color:transparent;
+  }
+  .timeframe button:hover:not(.on){border-color:rgba(201,168,76,.3);color:var(--text);}
+
+  /* ── Chart boxes — dramatic frame ── */
+  .chart-box{
+    transition:box-shadow .3s ease;
+    border-color:rgba(29,44,74,.9);
+  }
+  .chart-box.tall{
+    box-shadow:
+      0 0 0 1px rgba(201,168,76,.07),
+      0 6px 40px rgba(0,0,0,.6),
+      inset 0 0 80px rgba(201,168,76,.015);
+  }
+  .chart-box.short{
+    box-shadow:0 2px 16px rgba(0,0,0,.4),inset 0 0 30px rgba(0,0,0,.2);
+  }
+
+  /* Chart fade-in on ticker switch */
+  .chart-fade{animation:chartFadeIn .35s ease both;}
+  @keyframes chartFadeIn{from{opacity:0;transform:scale(.995)}to{opacity:1;transform:scale(1)}}
+
+  /* ── Signal chips — staggered entrance ── */
+  .chip{
+    transition:all .2s ease;
+    animation:chipReveal .35s ease both;
+  }
+  .chip:nth-child(1){animation-delay:.00s}
+  .chip:nth-child(2){animation-delay:.06s}
+  .chip:nth-child(3){animation-delay:.12s}
+  .chip:nth-child(4){animation-delay:.18s}
+  .chip:nth-child(5){animation-delay:.24s}
+  .chip:nth-child(6){animation-delay:.30s}
+  @keyframes chipReveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  .chip.green{border-color:rgba(38,169,108,.3);box-shadow:0 0 12px rgba(38,169,108,.08);}
+  .chip.red  {border-color:rgba(224,82,77,.3); box-shadow:0 0 12px rgba(224,82,77,.08);}
+  .chip.gold {border-color:rgba(201,168,76,.3);box-shadow:0 0 12px rgba(201,168,76,.08);}
+  .chip.blue {border-color:rgba(90,168,255,.3);box-shadow:0 0 12px rgba(90,168,255,.08);}
+
+  /* ── Right-panel tabs ── */
+  .rtab-btn{transition:all .2s ease;}
+  .rtab-btn.active{
+    box-shadow:0 -2px 14px rgba(201,168,76,.18);
+    background:linear-gradient(180deg,rgba(15,24,40,1) 0%,rgba(10,17,32,1) 100%);
+  }
+  .rtab-btn:hover:not(.active){background:rgba(25,40,65,.6);color:var(--text);}
+
+  /* ── Autopilot LED — expanded glow ── */
+  @keyframes apPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.9)}}
+  .ap-led{transition:all .3s ease;}
+  .ap-led.engaged{
+    background:var(--green);
+    box-shadow:0 0 0 3px rgba(38,169,108,.15),0 0 24px rgba(38,169,108,.8);
+    animation:apPulse 1.5s ease-in-out infinite;
+  }
+  .ap-led.envelope{
+    background:var(--red);
+    box-shadow:0 0 0 3px rgba(224,82,77,.2),0 0 28px rgba(224,82,77,.9);
+    animation:apPulse .55s ease-in-out infinite;
+  }
+
+  /* ── Autopilot progress bar — gradient shimmer ── */
+  .ap-progress>div{
+    background:linear-gradient(90deg,#a07828,#c9a84c,#e8d060,#c9a84c,#a07828);
+    background-size:300% 100%;
+    animation:progressShimmer 2s linear infinite;
+    transition:width .15s ease;
+  }
+  @keyframes progressShimmer{0%{background-position:0% center}100%{background-position:300% center}}
+
+  /* ── Numbers ── */
+  #p-cash b,#p-total b{
+    font-size:14px;
+    background:linear-gradient(90deg,var(--cream),#fff);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+
+  /* Number pop on change */
+  .num-pop{animation:numPop .3s ease both;}
+  @keyframes numPop{0%{transform:scale(1.18);color:var(--gold)}100%{transform:scale(1)}}
+
+  /* ── h3 gold accent line ── */
+  .card-hdr h3,.card-hdr h4{position:relative;padding-bottom:5px;}
+  .card-hdr h3::after,.card-hdr h4::after{
+    content:'';position:absolute;bottom:0;left:0;
+    width:28px;height:1px;
+    background:linear-gradient(90deg,var(--gold),transparent);
+  }
+
+  /* ── Input focus ── */
+  input:focus,select:focus{
+    outline:none;
+    border-color:rgba(201,168,76,.5) !important;
+    box-shadow:0 0 0 2px rgba(201,168,76,.1),0 0 12px rgba(201,168,76,.06);
+    transition:all .2s ease;
+  }
+
+  /* ── Custom scrollbar ── */
+  ::-webkit-scrollbar{width:4px;height:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:rgba(201,168,76,.25);border-radius:2px;}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(201,168,76,.5);}
+
+  /* ── Journal entries ── */
+  .journal-entry{transition:all .2s ease;animation:chipReveal .3s ease both;}
+  .journal-entry:hover{border-color:rgba(201,168,76,.22);background:rgba(20,32,58,1);}
+
+  /* ── Decision log entries ── */
+  .decision-log li{transition:background .15s ease;animation:chipReveal .25s ease both;}
+  .decision-log li:hover{background:rgba(255,255,255,.025);}
+
+  /* ── Dropdown entrance ── */
+  #instrument-dropdown{animation:dropReveal .18s ease both;}
+  @keyframes dropReveal{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Dropdown item hover */
+  .inst-opt{transition:background .12s ease;}
+  .inst-opt:hover,.inst-opt.focused{background:rgba(201,168,76,.06);}
+  .inst-opt-sym{
+    background:linear-gradient(135deg,var(--gold),#e8c96a);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+
+  /* ── Ticker info strip ── */
+  #ticker-info-strip{
+    background:linear-gradient(90deg,rgba(201,168,76,.07) 0%,rgba(10,17,32,.95) 35%);
+    border-left:3px solid var(--gold);
+    animation:infoSlide .3s ease both;
+  }
+  @keyframes infoSlide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+
+  /* ── Lesson / crash cards ── */
+  .lesson-card,.crash-card{transition:all .2s ease;}
+  .lesson-card:hover,.crash-card:hover{
+    transform:translateY(-1px);
+    box-shadow:0 6px 20px rgba(0,0,0,.3),0 0 0 1px rgba(201,168,76,.2);
+  }
+  .lesson-card.lesson-complete{box-shadow:0 0 14px rgba(38,169,108,.1);}
+  .lesson-num{transition:all .2s ease;}
+  .lesson-card:hover .lesson-num{background:var(--gold);color:#100a00;border-color:var(--gold);}
+
+  /* ── Lesson modal ── */
+  .lesson-modal-inner{
+    box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(201,168,76,.15);
+    animation:modalReveal .25s ease both;
+  }
+  @keyframes modalReveal{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+  /* ── Crash context panel ── */
+  #crash-context-panel{
+    box-shadow:0 4px 24px rgba(201,168,76,.12),0 0 0 1px rgba(201,168,76,.2);
+    animation:chipReveal .3s ease both;
+  }
+
+  /* ── Config bars / settings ── */
+  details#settings-panel summary,
+  details#replay-details summary{
+    transition:background .2s ease;
+  }
+  details#settings-panel[open] summary{background:rgba(15,24,40,.9);}
+
+  /* ── Footer ── */
+  .footer{
+    background:linear-gradient(90deg,transparent,rgba(201,168,76,.04),transparent);
+    border-top:1px solid rgba(201,168,76,.12);
+  }
+
+  /* ── Pill ── */
+  .pill{transition:all .2s ease;}
+  .pill:hover{border-color:rgba(201,168,76,.4);}
+
+  /* ── WM buttons ── */
+  .wm-btn{transition:all .15s ease;}
+
+  /* ── Summary/details expand ── */
+  details[open]>summary{color:var(--cream);}
+
+  /* ── Pilot stats ── */
+  .pilot-stat{
+    transition:all .2s ease;
+    background:linear-gradient(160deg,rgba(19,32,58,1),rgba(13,22,42,1));
+  }
+  .pilot-stat:hover{border-color:rgba(201,168,76,.2);box-shadow:0 0 12px rgba(201,168,76,.05);}
+
+  /* ── Autopilot status box ── */
+  .autopilot-status{
+    background:linear-gradient(135deg,rgba(19,32,58,1),rgba(10,17,34,1));
+    transition:all .3s ease;
+  }
+  .ap-led.engaged~.ap-text .ap-state{
+    color:var(--green);text-shadow:0 0 10px rgba(38,169,108,.4);
+  }
+
+  /* ── Search bar ── */
+  #instrument-search-bar{
+    background:linear-gradient(90deg,rgba(13,21,38,.98),rgba(16,26,46,.98));
+    border-bottom:1px solid rgba(201,168,76,.15);
+  }
+  .cat-btn{transition:all .18s ease;}
+  .cat-btn.active{
+    background:rgba(201,168,76,.12);
+    box-shadow:0 0 10px rgba(201,168,76,.15);
+  }
+  .cat-btn:hover{background:rgba(201,168,76,.08);}
+
+  /* ── Equity curve sparkline ── */
+  #equity-curve{border-radius:5px;border:1px solid var(--line)}
+  #equity-stats-row{transition:all .2s ease}
+  #equity-stats-row:hover{border-color:rgba(201,168,76,.25)}
+
+  /* ── Correlation matrix ── */
+  .corr-table{border-collapse:collapse;font-size:9px}
+  .corr-table th{padding:1px 3px;color:var(--muted);font-weight:600;white-space:nowrap;text-align:right}
+  .corr-table td{width:16px;height:16px;text-align:center;position:relative;cursor:default;transition:opacity .15s}
+  .corr-table td:hover{opacity:.8;outline:1px solid rgba(255,255,255,.4)}
+  .corr-table .corr-self{background:rgba(201,168,76,.4)!important}
+  .corr-row-label{color:var(--muted);font-weight:600;text-align:right;padding-right:4px;font-size:9px;white-space:nowrap}
+
+  /* ── Risk / Reward Calculator ── */
+  .rr-card{border-color:rgba(201,168,76,.18);}
+  .rr-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .rr-lbl{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+  .rr-lbl span{cursor:default}
+  .rr-lbl input{
+    padding:6px 8px;border-radius:6px;border:1px solid var(--line);
+    background:var(--panel-2);color:var(--text);font-size:13px;font-weight:600;
+    transition:border-color .2s;width:100%
+  }
+  .rr-lbl input:focus{outline:none;border-color:var(--gold)}
+  .rr-ratio-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .rr-ratio-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .rr-ratio-val{font-size:22px;font-weight:700;letter-spacing:-.5px;transition:color .3s}
+  .rr-bar-wrap{margin-bottom:10px}
+  .rr-bar{height:8px;border-radius:4px;transition:width .4s ease,background .4s ease;background:var(--red);width:0%}
+  .rr-bar-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px}
+  .rr-stats{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+  .rr-stat{display:flex;justify-content:space-between;font-size:12px}
+  .rr-stat-l{color:var(--muted)}
+  .rr-stat-r{font-weight:700}
+  .rr-stat-r.red{color:var(--red)}
+  .rr-stat-r.green{color:var(--green)}
+  .rr-verdict{
+    padding:7px 10px;border-radius:7px;font-size:12px;font-weight:600;
+    text-align:center;transition:all .3s ease;margin-bottom:8px
+  }
+  .rr-verdict.bad{background:rgba(224,82,77,.12);color:var(--red);border:1px solid rgba(224,82,77,.25)}
+  .rr-verdict.ok{background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.25)}
+  .rr-verdict.good{background:rgba(38,169,108,.1);color:var(--green);border:1px solid rgba(38,169,108,.25)}
+  .rr-rule{
+    font-size:11px;line-height:1.6;color:var(--muted);
+    background:rgba(201,168,76,.06);border-left:3px solid rgba(201,168,76,.4);
+    padding:7px 10px;border-radius:0 6px 6px 0;cursor:default
+  }
+  .rr-rule b{color:var(--gold)}
+  .rr-sizer{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+  .rr-sizer-hdr{font-size:12px;font-weight:700;color:var(--cream)}
+  .rr-sizer-result{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+  #ps-max-shares{font-weight:800}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>FJC TRADING LAB</h1>
-  <span class="pill" id="data-mode">SYNTHETIC DATA</span>
+  <div>
+    <h1>FJC TRADING LAB</h1>
+    <div class="tagline">every candle tells a story</div>
+  </div>
+  <span class="pill" id="data-mode"
+    data-tip="SYNTHETIC = mathematically generated candles, seeded so they look real but are not. Useful when offline or learning patterns without news noise. LIVE = real Yahoo Finance data via your proxy. Switch in Settings → Refresh prices.">SYNTHETIC DATA</span>
   <div class="clocks">
-    <span>NYSE <b id="nyse-status">...</b></span>
-    <span>JSE <b id="jse-status">...</b></span>
+    <span data-tip="New York Stock Exchange hours: 09:30–16:00 ET. Most US volume and volatility happens in the first and last 30 minutes — the open and close are when institutions move. OPEN = live session. CLOSED = after-hours or pre-market.">NYSE <b id="nyse-status">...</b></span>
+    <span data-tip="Johannesburg Stock Exchange hours: 09:00–17:00 SAST. JSE is Africa's largest exchange. Correlates with global risk sentiment — when Wall Street sneezes, the JSE catches a cold. OPEN = live session.">JSE <b id="jse-status">...</b></span>
     <span id="now">...</span>
   </div>
+  <button class="btn" id="btn-kb-help" onclick="document.getElementById('kb-overlay').style.display='flex'"
+    style="margin-left:8px;font-size:11px;padding:4px 8px;opacity:.7"
+    data-tip="Keyboard shortcuts — press ? anytime to toggle this panel.">⌨ ?</button>
 </header>
 
 <details id="settings-panel">
@@ -298,6 +697,31 @@
   <button class="btn" id="btn-replay-live" disabled data-tip="Exit Replay Mode and return to the most recent data.">Return to live</button>
 </div>
 </details>
+
+<!-- ── Instrument search bar ─────────────────────────────────────────── -->
+<div id="instrument-search-bar" style="padding:8px 16px;background:var(--panel-2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <span style="font-size:13px">🔍</span>
+  <div id="search-wrap">
+    <input id="instrument-search" placeholder="Search — type a symbol, name, or concept (e.g. 'usd', 'gold', 'carry trade', 'inflation', 'JSE')"
+      style="width:100%;padding:5px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:12px" autocomplete="off" />
+    <div id="instrument-dropdown"></div>
+  </div>
+  <button id="instrument-search-clear" class="btn" style="padding:4px 10px;font-size:11px;display:none">✕ Clear</button>
+  <div style="display:flex;gap:5px;flex-wrap:wrap" id="cat-filters">
+    <button class="btn cat-btn active" data-cat="">All</button>
+    <button class="btn cat-btn" data-cat="equity"    style="color:#5aa8ff;border-color:#5aa8ff">Equities</button>
+    <button class="btn cat-btn" data-cat="index"     style="color:var(--gold);border-color:var(--gold)">Indexes</button>
+    <button class="btn cat-btn" data-cat="global"    style="color:var(--purple);border-color:var(--purple)">Global</button>
+    <button class="btn cat-btn" data-cat="jse"       style="color:var(--green);border-color:var(--green)">JSE</button>
+    <button class="btn cat-btn" data-cat="commodity" style="color:#c87941;border-color:#c87941">Commodities</button>
+    <button class="btn cat-btn" data-cat="crypto"    style="color:#ff8c5a;border-color:#ff8c5a">Crypto</button>
+    <button class="btn cat-btn" data-cat="forex"     style="color:var(--muted);border-color:var(--muted)">Forex</button>
+  </div>
+  <span id="instrument-count" style="font-size:11px;color:var(--muted);white-space:nowrap"></span>
+</div>
+
+<!-- ── Active instrument info strip ──────────────────────────────────── -->
+<div id="ticker-info-strip" style="display:none;padding:8px 16px 10px;background:var(--panel);border-bottom:1px solid var(--line);font-size:12px;line-height:1.6;color:var(--cream)"></div>
 
 <div class="tabs" id="tabs"></div>
 
@@ -365,26 +789,30 @@
           <div class="ohlc" id="ohlc"></div>
         </div>
         <details style="margin-top:4px">
-          <summary style="font-size:11px;color:var(--muted);cursor:pointer;padding:2px 0;list-style:none">▸ Action key</summary>
+          <summary style="font-size:11px;color:var(--muted);cursor:pointer;padding:2px 0;list-style:none">▸ Action key — what the chart is telling you</summary>
           <div class="action-key" style="margin-top:4px">
-          <span>🟢 potential entry</span>
-          <span>🔴 consider taking profit</span>
-          <span>⚠️ caution</span>
-          <span>💚 oversold bounce watch</span>
-          <span>🌟 strong bullish pattern</span>
-          <span>💫 strong bearish pattern</span>
-          <span>🔨 hammer (bullish reversal)</span>
-          <span>⭐ shooting star (bearish reversal)</span>
-          <span>⚫ doji (indecision)</span>
+            <span data-tip="Golden Cross fired (MA50 crossed above MA200) AND RSI is not overbought. Historically one of the most reliable long-term entry signals. Does not mean buy immediately — it means conditions are favourable. Confirm with volume.">🟢 potential entry</span>
+            <span data-tip="RSI above 75 — the trend has run hard and fast. Not a crash signal, but a prompt to review your position size. Professionals trim here, not because they think it's over, but because they protect profits from a pullback.">🔴 consider taking profit</span>
+            <span data-tip="Death Cross (MA50 crossed below MA200). Long-term trend has shifted negative. The caution signal means: no new longs, reduce exposure, raise your stops. Markets can still bounce short-term, but the trend is now your enemy.">⚠️ caution — death cross</span>
+            <span data-tip="RSI dropped below 30 (oversold) while the long-term trend (MA200) is still up. The selling may be excessive. Watch the next 2–3 candles: if a reversal pattern forms (hammer, morning star), this is a potential re-entry in an uptrend. High-risk, high-reward.">💚 oversold bounce watch</span>
+            <span data-tip="Morning Star or strong Hammer formed. A 3-candle reversal pattern: large red candle, small indecision candle, large green candle. It shows that sellers are exhausted and buyers are taking control. Most reliable at a support level or after an oversold RSI reading.">🌟 bullish reversal pattern</span>
+            <span data-tip="Shooting Star or Bearish Engulfing formed. Price pushed high during the day but closed near the open — buyers tried and failed. Most dangerous at resistance levels or after an overbought RSI. Often precedes a pullback.">💫 bearish reversal pattern</span>
+            <span data-tip="Hammer candlestick: small body near the top, long lower wick. Sellers pushed price down hard during the day, but buyers recovered it by close. The long wick is a sign of rejection — price tested a lower level and the market said no. Bullish reversal signal, especially at support.">🔨 hammer (bullish reversal)</span>
+            <span data-tip="Shooting Star: small body near the bottom, long upper wick. Buyers pushed price up hard during the day, but sellers recovered it by close. The long upper wick shows rejection of higher prices. Bearish reversal signal, especially at resistance.">⭐ shooting star (bearish reversal)</span>
+            <span data-tip="Doji: open and close are nearly equal. Neither buyers nor sellers won the day — pure indecision. On its own, a doji means nothing. In context (after a strong move, at resistance or support, with a volume spike), it signals a potential reversal. The market is asking a question. The next candle answers it.">⚫ doji (indecision)</span>
           </div>
         </details>
         <div class="chart-box short">
           <canvas id="volume-chart"></canvas>
-          <div class="legend"><span>Volume</span></div>
+          <div class="legend">
+            <span data-tip="Volume = number of shares traded that day. The essential confirmation tool: a price move on HIGH volume is meaningful — institutions are involved. A move on LOW volume is suspect — it may not hold. Green bars = up-day volume. Red = down-day. Watch for volume spikes at turning points.">Volume</span>
+          </div>
         </div>
         <div class="chart-box short">
           <canvas id="rsi-chart"></canvas>
-          <div class="legend"><span>RSI(14)</span></div>
+          <div class="legend">
+            <span data-tip="RSI (Relative Strength Index, 14-day). Measures momentum on a 0–100 scale.&#10;&#10;Above 70 = overbought — the move may be exhausted, consider trimming.&#10;Below 30 = oversold — selling may be extreme, watch for a bounce.&#10;50 = neutral momentum.&#10;&#10;Key lesson: RSI alone is not a buy/sell signal. It tells you the CONDITION of the trend, not the direction. A stock can stay overbought for months in a strong uptrend.">RSI(14)</span>
+          </div>
         </div>
       </div>
     </div>
@@ -398,10 +826,14 @@
   <div>
 
     <div class="rtab-bar">
-      <button class="rtab-btn active" data-tab="trade"     onclick="rtab('trade')"    >📊 Trade</button>
-      <button class="rtab-btn"        data-tab="autopilot" onclick="rtab('autopilot')">🤖 Autopilot</button>
-      <button class="rtab-btn"        data-tab="journal"   onclick="rtab('journal')"  >📓 Journal</button>
-      <button class="rtab-btn"        data-tab="learn"     onclick="rtab('learn')"    >🎓 Learn</button>
+      <button class="rtab-btn active" data-tab="trade"     onclick="rtab('trade')"
+        data-tip="Paper Trading — practice without risk.&#10;&#10;Signals: what the indicators are saying right now.&#10;Portfolio: track your paper trades and P&L.&#10;Alerts: set price levels ahead of the move.&#10;Analogs: find historical setups that look like today's.&#10;&#10;Rule: never risk real money on a pattern you have not first tested on paper.">📊 Trade</button>
+      <button class="rtab-btn"        data-tab="autopilot" onclick="rtab('autopilot')"
+        data-tip="Rule-based Autopilot — watch a system trade.&#10;&#10;The autopilot follows a fixed rulebook (Golden Cross entry, RSI exits, envelope stop). Watch it make decisions, compare them to your own, and ask: where did the rules beat me? Where did I beat the rules?&#10;&#10;AI Analysis: send the current chart to Claude for a structured read.">🤖 Autopilot</button>
+      <button class="rtab-btn"        data-tab="journal"   onclick="rtab('journal')"
+        data-tip="Decision Journal — the most underrated tool in trading.&#10;&#10;Every trade is logged with your stated reason. The AI Reviews your recent entries and looks for patterns in your thinking — overconfidence, fear, revenge trading, rule-breaking.&#10;&#10;Historical Edge: raw statistics on how well each signal has performed.">📓 Journal</button>
+      <button class="rtab-btn"        data-tab="learn"     onclick="rtab('learn')"
+        data-tip="Structured Learning — the classroom built into the lab.&#10;&#10;Famous Crashes: re-live 2008, Dot-com, COVID day by day — no hindsight allowed.&#10;Curriculum: 6 guided lessons using the live chart as your textbook.&#10;&#10;History does not repeat, but it rhymes. These are the rhymes worth memorising.">🎓 Learn</button>
     </div>
 
     <!-- ── TRADE tab ── Signals · Portfolio · Alerts ──────────── -->
@@ -409,7 +841,7 @@
 
       <div class="card">
         <div class="card-hdr">
-          <h3>Signals</h3>
+          <h3 data-tip="Signals are a snapshot of the current market condition — not buy/sell orders. They answer: what is the trend? Is momentum rising or falling? Is the market stretched or compressed?&#10;&#10;Reading signals together is the skill. A bullish trend signal with overbought RSI means: yes, but wait for a pullback. A bearish signal with oversold RSI means: yes, but watch for a bounce.&#10;&#10;No single signal is ever enough on its own.">Signals</h3>
           <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-signals')">▬</button></div>
         </div>
         <div id="body-signals">
@@ -419,14 +851,33 @@
 
       <div class="card portfolio" style="margin-top:12px">
         <div class="card-hdr">
-          <h3>Paper Portfolio</h3>
+          <h3 data-tip="Paper trading = simulated trading with fake money. Why does it matter?&#10;&#10;Because the hardest part of trading is not analysis — it is executing under pressure. Paper trading builds the muscle memory of entering, sizing, and exiting positions before real money is at stake.&#10;&#10;Rule: if you cannot make money paper trading, you are not ready for real money. If you CAN make money paper trading, you are probably ready — but real emotions will still surprise you.">Paper Portfolio</h3>
           <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-portfolio')">▬</button></div>
         </div>
         <div id="body-portfolio">
-          <div class="row" style="font-size:13px;margin-bottom:6px">
+          <div class="row" style="font-size:13px;margin-bottom:4px">
             <span>Cash: <b id="p-cash">R 100,000.00</b></span>
             <span class="grow"></span>
             <span>Total: <b id="p-total">R 100,000.00</b></span>
+          </div>
+          <!-- Equity curve sparkline + return stats -->
+          <div id="equity-stats-row" style="display:flex;align-items:center;gap:10px;margin-bottom:6px;padding:5px 8px;background:var(--panel-2);border-radius:7px;border:1px solid var(--line)">
+            <canvas id="equity-curve" width="90" height="36" style="flex-shrink:0"
+              data-tip="Your portfolio equity curve — every trade you made plotted as a line. An upward slope is the goal. A flat line means no activity. A jagged line means too many trades without an edge.&#10;&#10;The shape of this curve teaches more than any textbook: smooth risers have discipline; volatile curves have emotion."></canvas>
+            <div style="display:flex;flex-direction:column;gap:2px;flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:11px">
+                <span style="color:var(--muted)">Return</span>
+                <b id="p-return" style="color:var(--muted)">—</b>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px">
+                <span style="color:var(--muted)" data-tip="Maximum drawdown: the largest peak-to-trough drop in your portfolio value. The number every risk manager watches. Under 10% = disciplined. Over 20% = too much risk per trade.">Max drawdown</span>
+                <b id="p-maxdd" style="color:var(--muted)">—</b>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px">
+                <span style="color:var(--muted)">Trades</span>
+                <b id="p-trades" style="color:var(--muted)">0</b>
+              </div>
+            </div>
           </div>
           <table>
             <thead><tr><th>Ticker</th><th class="num">Shares</th><th class="num">Avg</th><th class="num">P/L</th></tr></thead>
@@ -442,9 +893,79 @@
         </div>
       </div>
 
+      <!-- ── Risk / Reward Calculator ──────────────────────────── -->
+      <div class="card rr-card" style="margin-top:12px">
+        <div class="card-hdr">
+          <h3 data-tip="The Risk/Reward ratio is the single most important concept in position management.&#10;&#10;Every trade has two outcomes: how much you LOSE if wrong vs how much you GAIN if right. A 1:2 R:R means you risk R1 to make R2. At a 50% win rate, that is still profitable.&#10;&#10;The 2% Rule: never risk more than 2% of your total portfolio on any single trade. This one rule, applied consistently, prevents the catastrophic losses that end trading careers.&#10;&#10;Professional traders do not ask 'will this trade win?' They ask 'does this trade have a good R:R?'">Risk / Reward Calculator</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-rr')">▬</button></div>
+        </div>
+        <div id="body-rr">
+          <div class="rr-inputs">
+            <label class="rr-lbl">
+              <span data-tip="Your planned entry price. Auto-filled from the latest close — adjust if you plan to enter at a different level.">Entry</span>
+              <input type="number" id="rr-entry" step="0.01" placeholder="Entry price" />
+            </label>
+            <label class="rr-lbl">
+              <span data-tip="Where you will EXIT if you are WRONG. Place below a key support level or recent swing low — not just a round number. This distance is your actual risk per share.">Stop Loss</span>
+              <input type="number" id="rr-stop" step="0.01" placeholder="Stop price" />
+            </label>
+            <label class="rr-lbl">
+              <span data-tip="Where you will EXIT if you are RIGHT. Place at a key resistance level, prior high, or measured move target. This distance is your potential reward per share.">Take Profit</span>
+              <input type="number" id="rr-tp" step="0.01" placeholder="Target price" />
+            </label>
+            <label class="rr-lbl">
+              <span data-tip="Number of shares you plan to buy. Combined with your stop distance, this determines your total monetary risk on the trade.">Shares</span>
+              <input type="number" id="rr-qty" step="1" min="1" value="10" placeholder="Qty" />
+            </label>
+          </div>
+          <div class="rr-results" id="rr-results" style="display:none">
+            <div class="rr-ratio-row">
+              <span class="rr-ratio-label">R:R Ratio</span>
+              <span class="rr-ratio-val" id="rr-ratio-val">—</span>
+            </div>
+            <div class="rr-bar-wrap">
+              <div class="rr-bar" id="rr-bar"></div>
+              <div class="rr-bar-labels"><span>0</span><span>1:1</span><span>2:1</span><span>3:1+</span></div>
+            </div>
+            <div class="rr-stats">
+              <div class="rr-stat"><span class="rr-stat-l">Risk / share</span><span class="rr-stat-r red" id="rr-risk-share">—</span></div>
+              <div class="rr-stat"><span class="rr-stat-l">Reward / share</span><span class="rr-stat-r green" id="rr-reward-share">—</span></div>
+              <div class="rr-stat"><span class="rr-stat-l">Total risk (qty × risk/share)</span><span class="rr-stat-r red" id="rr-total-risk">—</span></div>
+              <div class="rr-stat"><span class="rr-stat-l">% of portfolio at risk</span><span class="rr-stat-r" id="rr-pct-risk">—</span></div>
+            </div>
+            <div class="rr-verdict" id="rr-verdict"></div>
+          </div>
+          <!-- Position Sizing section — answers "how many shares?" -->
+          <div class="rr-sizer" id="rr-sizer">
+            <div class="rr-sizer-hdr" data-tip="The R/R Calculator asks 'is this trade worth taking?' — the Position Sizer answers 'how many shares should I take?' Both questions must be answered before every trade. The sizer auto-computes the maximum position size that keeps your risk within the 2% rule.">
+              📐 Position Sizer <span style="font-weight:400;color:var(--muted);font-size:11px">— 2% Rule applied</span>
+            </div>
+            <div class="rr-inputs" style="margin-top:8px;margin-bottom:0">
+              <label class="rr-lbl">
+                <span data-tip="Your total portfolio value (cash + open positions marked to market). Auto-filled from your paper portfolio.">Portfolio value</span>
+                <input type="number" id="ps-portfolio" step="1" placeholder="Total value" />
+              </label>
+              <label class="rr-lbl">
+                <span data-tip="The percentage of your portfolio you are willing to lose if this trade hits your stop. Default is 2% — the maximum recommended for any single trade.">Max risk %</span>
+                <input type="number" id="ps-risk-pct" step="0.1" min="0.1" max="10" value="2" />
+              </label>
+            </div>
+            <div class="rr-sizer-result" id="ps-result" style="display:none">
+              <div class="rr-stat"><span class="rr-stat-l">Max risk amount</span><span class="rr-stat-r red" id="ps-risk-amount">—</span></div>
+              <div class="rr-stat"><span class="rr-stat-l">Max shares to buy</span><span class="rr-stat-r" id="ps-max-shares" style="color:var(--gold);font-size:14px">—</span></div>
+              <div class="rr-stat"><span class="rr-stat-l">Cost of that position</span><span class="rr-stat-r" id="ps-cost">—</span></div>
+            </div>
+          </div>
+
+          <div class="rr-rule" data-tip="The Kelly Criterion and decades of trading data both point to the same rule: risking more than 2% per trade leads to ruin, even with a profitable strategy. Five bad trades in a row would cost only 10% of your capital — recoverable. At 10% per trade, five losers = 41% drawdown — much harder to recover from.">
+            📐 <b>The 2% Rule:</b> Never risk more than 2% of your total portfolio on a single trade. This is not a suggestion — it is the difference between surviving drawdowns and blowing up your account.
+          </div>
+        </div>
+      </div>
+
       <div class="card alerts" style="margin-top:12px">
         <div class="card-hdr">
-          <h3>Price Alerts</h3>
+          <h3 data-tip="Price alerts teach one of the most important trading disciplines: decide your levels BEFORE the move.&#10;&#10;Amateur traders react to price. Professional traders pre-plan: 'If it reaches X, I act.' Setting an alert forces you to think in advance — what level matters? Why? What will I do when it gets there?&#10;&#10;The alert itself is not the lesson. The act of setting it is.">Price Alerts</h3>
           <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-alerts')">▬</button></div>
         </div>
         <div id="body-alerts">
@@ -530,10 +1051,21 @@
           <h4>Decision Log</h4>
           <ul class="decision-log" id="decision-log"></ul>
           <details>
-            <summary>+ More: autopilot rules &amp; envelope</summary>
-            <p><b>Trade rules:</b> ENTER on Golden Cross + RSI&lt;65 (buy 25% cash). ADD on RSI bounce from oversold in uptrend (15%). TRIM half on RSI&gt;75. EXIT on Death Cross OR price 8% below MA200.</p>
-            <p><b>Envelope protection:</b> If drawdown exceeds 15% from peak, autopilot closes all positions and disengages.</p>
-            <p><b>Modes:</b> TREND | DEFENSIVE | GROUNDED. <b>Position cap:</b> 50% per ticker. <b>Cooldown:</b> 5 days.</p>
+            <summary>+ More: the rulebook &amp; why each rule exists</summary>
+            <p><b>ENTER — Golden Cross + RSI &lt; 65 (25% of cash):</b> The Golden Cross (MA50 crosses above MA200) signals a confirmed long-term trend shift. Waiting for RSI below 65 avoids buying into an already-stretched move. Sizing at 25% means you have room to add — you never go all-in on the first signal.</p>
+            <p><b>ADD — RSI bounce from oversold in uptrend (15% of cash):</b> If you are already in a trend and the stock pulls back to oversold (RSI &lt; 30) while MA200 is still rising, adding to the position is justified. This is buying a discount inside a confirmed uptrend — the highest-probability setup in trend following.</p>
+            <p><b>TRIM — RSI &gt; 75 (sell half the position):</b> Not an exit. When momentum is extreme, reduce size to lock in profit and free up cash for the next opportunity. Trimming half keeps you in the trend while protecting gains. Most retail traders do the opposite: they hold too long and give it all back.</p>
+            <p><b>EXIT — Death Cross OR price 8% below MA200:</b> The Death Cross (MA50 crosses below MA200) is the long-term trend reversal signal. The 8% MA200 filter catches breakdowns before the cross confirms. Either condition means: the thesis is broken. Exit cleanly. Capital preservation is Rule 1.</p>
+            <p><b>Envelope protection — 15% drawdown closes everything:</b> The most important rule of all. If the portfolio falls 15% from its peak, all positions are closed and the system disengages. This prevents the autopilot from riding a crash to zero. It also teaches the hardest lesson: knowing when to stop is more valuable than any entry signal.</p>
+            <p><b>Modes:</b> TREND (uptrend, rules active) | DEFENSIVE (below MA200, size reduced) | GROUNDED (envelope triggered, cash only). Position cap: 50% per ticker. Cooldown: 5 days between trades on the same instrument.</p>
+          </details>
+          <details style="margin-top:4px">
+            <summary>+ Decision log colour guide</summary>
+            <p style="margin:6px 0 2px"><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:6px"></span><b>Green border</b> — ENTER: new position opened.</p>
+            <p style="margin:2px 0"><span style="display:inline-block;width:10px;height:10px;background:var(--blue);border-radius:2px;margin-right:6px"></span><b>Blue border</b> — ADD: existing position increased.</p>
+            <p style="margin:2px 0"><span style="display:inline-block;width:10px;height:10px;background:var(--gold);border-radius:2px;margin-right:6px"></span><b>Gold border</b> — TRIM: half position sold to lock in profit.</p>
+            <p style="margin:2px 0"><span style="display:inline-block;width:10px;height:10px;background:var(--red);border-radius:2px;margin-right:6px"></span><b>Red border</b> — EXIT: full position closed.</p>
+            <p style="margin:2px 0"><span style="display:inline-block;width:10px;height:10px;background:var(--purple);border-radius:2px;margin-right:6px"></span><b>Purple border</b> — SKIP: signal fired but Smart Filter rejected it (win rate &lt; 50%).</p>
           </details>
         </div>
       </div>
@@ -548,7 +1080,9 @@
           <h3>Decision Journal</h3>
           <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-journal')">▬</button></div>
           <button class="btn gold" id="btn-journal-review" style="margin-left:8px"
-            data-tip="Ask Claude to review your recent trade decisions. Requires AI proxy URL.">AI Review</button>
+            data-tip="Ask Claude to analyse your last 14 days of trades. It looks for: revenge trading (buying back after a loss without a new signal), overconfidence (increasing size after wins), fear (exiting before your stop), and rule-breaking. Self-awareness built by data, not by feeling.">AI Review</button>
+          <button class="btn" id="btn-export-journal" style="margin-left:4px"
+            data-tip="Download all journal entries as a CSV file. Open in Excel or any spreadsheet to analyse your own trading patterns: win rate by instrument, average holding time, best and worst R:R trades.">⬇ CSV</button>
           <button class="btn" id="btn-clear-journal" style="margin-left:4px"
             data-tip="Clear all journal entries.">Clear</button>
         </div>
@@ -567,12 +1101,14 @@
           <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'edge-body')">▬</button></div>
         </div>
         <div id="edge-body">
-          <div style="font-size:11px;color:var(--muted);margin:8px 0">How each signal has performed historically. Forward look: 30 trading days after the signal fires.</div>
+          <div style="font-size:11px;color:var(--muted);margin:8px 0">How each signal has actually performed in this dataset — 30 trading days forward after each firing. This is the difference between thinking a signal works and <em>knowing</em> whether it has.</div>
           <div id="edge-tables"></div>
           <details>
-            <summary>+ More: how to read this</summary>
-            <p><b>Fires</b> = times the signal triggered. <b>Win%</b> = % of fires that were correct. <b>Avg</b> = average 30-day return after signal.</p>
-            <p><b>Green Win% (≥60%)</b> = edge exists. <b>Red (&lt;40%)</b> = signal has historically failed. Low Fires (&lt;5) = not enough data to trust.</p>
+            <summary>+ More: how to read this table</summary>
+            <p><b>Fires</b> = how many times this signal triggered in the data. Fewer than 5 fires = not enough data to draw conclusions. Do not trade a signal with 2 fires.</p>
+            <p><b>Win%</b> = percentage of fires where the price was higher 30 days later. Above 60% = a real edge exists. Below 40% = the signal has historically been wrong more than right — consider fading it.</p>
+            <p><b>Avg</b> = average return 30 trading days after the signal. A signal with 60% win rate and +3% avg is far more useful than one with 80% win rate and +0.1% avg.</p>
+            <p><b>The key lesson:</b> most signals you see on the internet have never been tested on real data. This table shows you the truth for your specific instruments. Use it before you trust any signal.</p>
           </details>
         </div>
       </div>
@@ -589,8 +1125,10 @@
         </div>
         <div id="body-crashes">
           <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
-            Re-live a market crash day-by-day with no hindsight. Each scenario loads full historical data
-            and enters Replay Mode at the crash onset. Requires Yahoo proxy URL.
+            Re-live a market crash day-by-day with no hindsight allowed. The chart shows only what was visible at the time. Step forward one day at a time — exactly as a trader living through it would have. Use the Journal to record what you would have done, then compare to what actually happened.
+          </p>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+            The purpose is not to predict. It is to understand how crashes feel from the inside — the false recoveries, the disbelief, the panic, the capitulation. You cannot learn this from a chart that already shows the bottom. Requires Yahoo proxy URL.
           </p>
           <div id="crash-loading" style="display:none;font-size:12px;color:var(--gold);padding:4px 0 8px"></div>
           <div id="crashes-list"></div>
@@ -604,10 +1142,46 @@
         </div>
         <div id="body-curriculum">
           <p style="font-size:12px;color:var(--muted);margin:0 0 10px">
-            Six structured lessons using the live lab as the classroom. No videos. No paywalls. No gurus.
+            Six structured lessons using the live chart as your textbook. No videos. No paywalls. No gurus. Each lesson is designed to be completed while looking at real or synthetic data — the theory and the practice happen simultaneously.
+          </p>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">
+            Mark a lesson complete only when you can explain the concept to someone else. Understanding is measured by teaching, not by reading.
           </p>
           <div id="curriculum-progress"></div>
           <div id="curriculum-list" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <!-- ── Volatility Ranking ─────────────────────────────────── -->
+      <div class="card" style="margin-top:12px">
+        <div class="card-hdr">
+          <h3 data-tip="Volatility = daily price movement as a percentage of price. High volatility means larger moves — both up AND down — on a typical day.&#10;&#10;Why it matters: volatility determines your position size. A stock that moves 5% per day on average requires a much wider stop loss than one that moves 1%. If you use the same stop distance on all instruments you will be stopped out of volatile instruments constantly.&#10;&#10;The 2% Rule interacts directly with volatility: on high-volatility instruments, even a single lot may exceed your 2% risk budget. Use the R:R Calculator to check before every trade.">Volatility Ranking</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-volrank')">▬</button></div>
+        </div>
+        <div id="body-volrank">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.6">
+            Every instrument ranked by typical daily volatility — from the calmest blue-chip to the most explosive crypto. Use this table to calibrate your position sizing: the more volatile the instrument, the smaller your position must be to stay within the 2% risk rule.
+          </p>
+          <div id="vol-ranking-table"></div>
+        </div>
+      </div>
+
+      <!-- ── Correlation Matrix ─────────────────────────────────── -->
+      <div class="card" style="margin-top:12px">
+        <div class="card-hdr">
+          <h3 data-tip="Correlation measures how two instruments move together. +1.0 = they always move in the same direction. -1.0 = they always move opposite. 0.0 = no relationship.&#10;&#10;Why it matters for your portfolio: if everything you own is highly correlated (above +0.7), you don't actually have diversification — you just have the same bet in different wrappers. True diversification requires assets that move independently or inversely.&#10;&#10;The correlation matrix below uses the last year of synthetic daily returns. In real markets, correlations shift — especially during crises, when everything becomes correlated as forced selling hits all assets simultaneously.">Correlation Matrix</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-corrmatrix')">▬</button></div>
+        </div>
+        <div id="body-corrmatrix">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.6">
+            Daily-return correlations across all instruments — computed from the last 252 synthetic trading days. Green = positive (move together). Red = negative (move opposite). The deeper the colour, the stronger the relationship.
+          </p>
+          <div id="corr-matrix-wrap" style="overflow-x:auto"></div>
+          <div style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--muted)">
+            <span>🟢 >0.7 strong positive</span>
+            <span>⬜ near zero</span>
+            <span>🔴 &lt;−0.3 negative</span>
+          </div>
         </div>
       </div>
 
@@ -2651,5 +3225,59 @@ if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.p
   });
 }
 -->
+
+<!-- ============================================================ -->
+<!-- Keyboard Shortcut Overlay (press ? to toggle)               -->
+<!-- ============================================================ -->
+<div id="kb-overlay" style="display:none;position:fixed;inset:0;z-index:9000;align-items:center;justify-content:center;background:rgba(8,14,26,.85);backdrop-filter:blur(6px)"
+  onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--panel);border:1px solid rgba(201,168,76,.3);border-radius:14px;padding:24px 28px;max-width:500px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(201,168,76,.1)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin:0;font-size:15px;color:var(--gold);font-family:'Playfair Display',Georgia,serif">⌨ Keyboard Shortcuts</h3>
+      <button onclick="document.getElementById('kb-overlay').style.display='none'"
+        style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px">
+      <!-- Trading -->
+      <div style="grid-column:1/-1;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin:6px 0 2px">Trading</div>
+      <div class="kb-row"><kbd>B</kbd><span>Buy at current close</span></div>
+      <div class="kb-row"><kbd>S</kbd><span>Sell at current close</span></div>
+      <!-- Timeframes -->
+      <div style="grid-column:1/-1;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin:8px 0 2px">Timeframes</div>
+      <div class="kb-row"><kbd>1</kbd><span>30 days</span></div>
+      <div class="kb-row"><kbd>2</kbd><span>90 days</span></div>
+      <div class="kb-row"><kbd>3</kbd><span>180 days</span></div>
+      <div class="kb-row"><kbd>4</kbd><span>1 year</span></div>
+      <div class="kb-row"><kbd>5</kbd><span>2 years</span></div>
+      <!-- Chart overlays -->
+      <div style="grid-column:1/-1;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin:8px 0 2px">Chart</div>
+      <div class="kb-row"><kbd>E</kbd><span>Toggle event flags</span></div>
+      <!-- Replay -->
+      <div style="grid-column:1/-1;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin:8px 0 2px">Replay Mode</div>
+      <div class="kb-row"><kbd>→</kbd><span>Step forward 1 day</span></div>
+      <div class="kb-row"><kbd>←</kbd><span>Step back 1 day</span></div>
+      <!-- General -->
+      <div style="grid-column:1/-1;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin:8px 0 2px">General</div>
+      <div class="kb-row"><kbd>Esc</kbd><span>Close lesson modal</span></div>
+      <div class="kb-row"><kbd>?</kbd><span>Toggle this panel</span></div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin:14px 0 0;line-height:1.5">
+      Shortcuts are disabled when cursor is in a text field. The fastest traders use the keyboard —
+      muscle memory frees up your attention for the chart.
+    </p>
+  </div>
+</div>
+
+<style>
+  .kb-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);padding:2px 0}
+  .kb-row span{color:var(--text)}
+  kbd{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:22px;height:22px;padding:0 5px;
+    background:var(--panel-2);border:1px solid var(--line);border-bottom:2px solid rgba(201,168,76,.3);
+    border-radius:4px;font-size:11px;font-weight:700;color:var(--gold);
+    font-family:Inter,system-ui,monospace;
+  }
+</style>
 </body>
 </html>

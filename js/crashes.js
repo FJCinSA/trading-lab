@@ -299,7 +299,72 @@ export const CRASH_SCENARIOS = [
       "Warning signs: The rand had already been weakening for months. Commodity prices (oil) had been falling since mid-2014. Eskom load-shedding was intensifying. Political risk was rising with the Gupta relationship increasingly visible. None of these individually screamed 'sell' — but together, in hindsight, the pressure was building.",
       "Key question: How many trading sessions before the chart gives you a clear signal? Watch the volume spike on December 10 and the pattern that follows over the next two weeks."
     ]
+  },
+
+  // ── Additional classics ─────────────────────────────────────────
+  {
+    id: 'black-monday-1987',
+    name: 'Black Monday 1987',
+    ticker: 'DIA',
+    subtitle: 'Oct 1987  ·  Single-day −22%',
+    magnitude: '-22%',
+    duration: '1 day',
+    startDate: '1987-08-01',
+    endDate:   '1988-06-30',
+    fetchStart: '1985-01-01',
+    fetchEnd:   '1989-12-31',
+    context: [
+      "It's August 1987. The Dow Jones has surged 250% over the previous five years. Ronald Reagan is in the White House. Program trading — computerised, algorithmic strategies — now account for a significant share of daily NYSE volume. Nobody fully understands the interconnections yet.",
+      "On Friday October 16, the Dow falls 4.6% — large but not catastrophic. Over the weekend, portfolio managers decide to execute large protective sell programs. On Monday morning, October 19, 1987, those programs all fire simultaneously.",
+      "The Dow falls 508 points — 22.6% — in a single session. The largest single-day percentage decline in the index's history. Stock exchanges around the world fall in sympathy. The Hong Kong exchange closes entirely for four days.",
+      "The remarkable sequel: the Fed, under newly appointed chair Alan Greenspan, immediately cuts rates and floods the system with liquidity. The crash that everyone expected to trigger a depression causes a recession that never arrives. Markets fully recover within two years.",
+      "Your mission: Step through the weeks leading up to Black Monday. The chart shows the rising trend — very little technical warning of what is coming. Then witness the single-candle devastation and the recovery. This is the defining lesson in tail risk: sometimes the technical signals simply aren't there before the catastrophe.",
+      "Key question: What position sizing rule would have protected you from a 22% single-day move? Answer: none, fully. But the 2% rule per trade, with no leverage, means you survive even a 22% market drop. Maximum theoretical loss = your fully invested position × 22%. With proper sizing, that's painful but not fatal."
+    ]
+  },
+
+  {
+    id: 'asian-crisis-1997',
+    name: 'Asian Financial Crisis',
+    ticker: 'EEM',
+    subtitle: 'Jul 1997 – Sep 1998  ·  −60%',
+    magnitude: '-60%',
+    duration: '14 months',
+    startDate: '1997-06-01',
+    endDate:   '1998-09-30',
+    fetchStart: '1995-01-01',
+    fetchEnd:   '2000-12-31',
+    context: [
+      "It is June 1997 in Southeast Asia. Thailand, South Korea, Indonesia and Malaysia have boomed through the early 1990s — the 'Asian Tiger' economies. Growth has averaged 8-10% per year. Foreign capital is flooding in, attracted by high interest rates and pegged exchange rates that make investment safe.",
+      "The problem: those exchange rate pegs are built on borrowed dollar reserves. When the Thai baht comes under speculative attack in July 1997, the Thai central bank runs out of dollars defending the peg and is forced to float. The baht collapses 50% within months.",
+      "Currency contagion is immediate. The Indonesian rupiah, South Korean won, Malaysian ringgit — all collapse. Companies that borrowed in US dollars now owe twice as much in local currency terms. Bankruptcies cascade. The IMF arrives with bailout packages attached to brutal austerity conditions.",
+      "Russia defaults on its debt in August 1998. Long-Term Capital Management — the Nobel Prize-winning hedge fund — nearly collapses the global financial system with $100bn in assets and 25:1 leverage. The Fed organises an emergency private bailout.",
+      "South Africa is caught in the contagion. The ZAR weakens sharply in 1998 even though South Africa had no direct Asian exposure. This is the definition of 'contagion risk': when global investors panic and sell every emerging market asset regardless of individual fundamentals.",
+      "Key question: EEM as a modern ETF didn't exist in 1997, but the pattern of EM crisis is timeless. Step through the scenario and watch how the death cross plays out. Notice how long the downtrend lasts and how many false recovery rallies appear within it — each one a potential trap for the undisciplined buyer."
+    ]
+  },
+
+  {
+    id: 'oil-crash-2014',
+    name: 'Oil Crash 2014–2016',
+    ticker: 'OIL',
+    subtitle: 'Jun 2014 – Feb 2016  ·  −75%',
+    magnitude: '-75%',
+    duration: '20 months',
+    startDate: '2014-05-01',
+    endDate:   '2016-06-30',
+    fetchStart: '2012-01-01',
+    fetchEnd:   '2018-12-31',
+    context: [
+      "It is June 2014. Brent crude oil sits at $115 per barrel. US shale production has been growing rapidly for three years — the 'fracking revolution' has made America the world's largest oil producer for the first time since the 1970s. OPEC still believes it controls the marginal price of oil.",
+      "In November 2014, OPEC meets in Vienna and makes a historic decision: instead of cutting production to defend prices, Saudi Arabia convinces the cartel to maintain output. The strategy is to flood the market and drive US shale producers — who need $60-80 oil to be profitable — out of business.",
+      "The result is one of the most sustained commodity bear markets in decades. WTI crude falls from $107 in June 2014 to $26 in February 2016 — a 76% decline in 20 months. Entire oil-exporting economies are devastated: Venezuela collapses, Nigeria enters recession, Russia scrambles to rebalance its budget.",
+      "Sasol (SOL.JO) is the South African casualty you will watch most clearly in this lab. Sasol converts coal to oil — its revenue is directly linked to the oil price, and the rand's simultaneous weakening compounds the pain. SOL fell over 60% from peak to trough in this period.",
+      "This scenario teaches the commodity cycle: supply gluts are the most brutal bear markets because the correction mechanism (production cuts) requires coordination among sovereign nations with conflicting interests. Commodity prices can stay suppressed for years, long past when any analyst thought they 'should' recover.",
+      "Key question: Using only the chart data visible in replay mode — no knowledge of future prices — on what day does the technical picture definitively confirm the downtrend? Watch for the Death Cross. Watch for the volume signature of capitulation. Watch for the failed rallies. Each one is a lesson."
+    ]
   }
+
 ];
 
 // ------------------------------------------------------------------

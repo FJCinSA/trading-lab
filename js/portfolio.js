@@ -69,9 +69,40 @@ export function trade(direction, onSuccess) {
   }
 
   state.portfolio.positions[t.sym] = pos;
+  recordEquitySnapshot();
   savePortfolio();
   renderPortfolio();
   if (onSuccess) onSuccess({ ticker: t.sym, price: last, qty, ccy: t.ccy });
+}
+
+// ------------------------------------------------------------------
+// Equity history snapshot
+// ------------------------------------------------------------------
+
+/**
+ * Record a portfolio total-value snapshot in state.portfolio.history.
+ * Called after every trade (manual or autopilot) so the equity curve
+ * always reflects every decision made.
+ */
+export function recordEquitySnapshot() {
+  if (!state.portfolio.history) state.portfolio.history = [];
+  // Mark-to-market: value all open positions at their latest close
+  let mv = 0;
+  for (const t of TICKERS) {
+    const pos = state.portfolio.positions[t.sym];
+    if (!pos || pos.shares === 0) continue;
+    const last = state.data[t.sym]?.[state.data[t.sym].length - 1]?.c || 0;
+    mv += pos.shares * last;
+  }
+  const total = state.portfolio.cash + mv;
+  const today = new Date().toISOString().slice(0, 10);
+  // Update the same-day entry rather than adding duplicates
+  const hist = state.portfolio.history;
+  if (hist.length > 0 && hist[hist.length - 1].date === today) {
+    hist[hist.length - 1].total = total;
+  } else {
+    hist.push({ date: today, total });
+  }
 }
 
 // ------------------------------------------------------------------
