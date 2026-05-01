@@ -838,8 +838,8 @@ async function jumpToCrash(scenario) {
   if (!state.yahooProxy) {
     alert(
       'Crash case studies require live Yahoo Finance data.\n\n' +
-      'Configure your Yahoo proxy URL in the Settings section below, ' +
-      'then click a scenario again.'
+      'The Yahoo proxy should be pre-configured automatically. ' +
+      'If you see this message, try refreshing the page.'
     );
     return;
   }

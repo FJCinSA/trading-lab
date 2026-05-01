@@ -26,7 +26,7 @@ export async function askClaude(kind) {
   if (!state.proxy) {
     out.classList.remove('empty');
     out.style.color = 'var(--red)';
-    out.textContent = 'Add your Cloudflare proxy URL at the top of the page first.';
+    out.textContent = 'AI proxy not configured — try refreshing the page.';
     return;
   }
   out.classList.remove('empty');
