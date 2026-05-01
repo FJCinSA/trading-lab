@@ -253,23 +253,33 @@
   </div>
 </header>
 
-<div class="config-bar">
-  <span>AI proxy URL:</span>
-  <input id="proxy-url" placeholder="https://your-cloudflare-worker.workers.dev/v1/messages" />
-  <button class="btn" id="save-proxy">Save</button>
-  <span id="proxy-status">not configured</span>
-</div>
+<details id="settings-panel">
+  <summary style="padding:6px 16px;background:var(--panel-2);border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none">
+    <span style="font-size:14px">⚙️</span>
+    <span style="color:var(--gold);font-weight:600">Settings</span>
+    <span id="settings-status-line" style="color:var(--muted);font-size:11px"></span>
+    <span style="margin-left:auto;font-size:10px;color:var(--muted)">click to expand ▾</span>
+  </summary>
 
-<div class="config-bar">
-  <span data-tip="Cloudflare Worker that fetches real OHLC data from Yahoo Finance. Once set, click 'Refresh prices' to replace the synthetic data with the latest live candles for all four tickers. Falls back silently to synthetic if the fetch fails.">Yahoo data URL:</span>
-  <input id="yahoo-url" placeholder="https://yahoo-proxy.your-subdomain.workers.dev/" />
-  <button class="btn" id="save-yahoo">Save</button>
-  <button class="btn gold" id="refresh-yahoo" disabled data-tip="Pull the full available daily history for all tickers from Yahoo Finance via your proxy. Replaces synthetic data with real market data and enables Famous Crashes case studies.">Refresh prices</button>
-  <span id="data-status">synthetic data</span>
-  <span style="margin-left:8px" data-tip="USD/ZAR exchange rate used to convert TDY, TSLA and MNST prices into your ZAR paper portfolio. Update this when the rate moves — stale rate means stale P&amp;L.">USD/ZAR:</span>
-  <input id="fx-rate" type="number" step="0.01" min="1" style="width:72px;padding:4px 8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:12px" />
-  <button class="btn" id="save-fx">Save</button>
-</div>
+  <div class="config-bar">
+    <span>AI proxy URL:</span>
+    <input id="proxy-url" placeholder="https://your-cloudflare-worker.workers.dev/v1/messages" />
+    <button class="btn" id="save-proxy">Save</button>
+    <span id="proxy-status">not configured</span>
+  </div>
+
+  <div class="config-bar">
+    <span data-tip="Cloudflare Worker that fetches real OHLC data from Yahoo Finance. Once set, click 'Refresh prices' to replace the synthetic data with the latest live candles for all four tickers. Falls back silently to synthetic if the fetch fails.">Yahoo data URL:</span>
+    <input id="yahoo-url" placeholder="https://yahoo-proxy.your-subdomain.workers.dev/" />
+    <button class="btn" id="save-yahoo">Save</button>
+    <button class="btn gold" id="refresh-yahoo" disabled data-tip="Pull the full available daily history for all tickers from Yahoo Finance via your proxy. Replaces synthetic data with real market data and enables Famous Crashes case studies.">Refresh prices</button>
+    <span id="data-status">synthetic data</span>
+    <span style="margin-left:8px" data-tip="USD/ZAR exchange rate used to convert TDY, TSLA and MNST prices into your ZAR paper portfolio. Update this when the rate moves — stale rate means stale P&amp;L.">USD/ZAR:</span>
+    <input id="fx-rate" type="number" step="0.01" min="1" style="width:72px;padding:4px 8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:12px" />
+    <button class="btn" id="save-fx">Save</button>
+  </div>
+
+</details>
 
 <div class="config-bar" id="replay-bar">
   <span data-tip="Replay Mode pretends a chosen historical date is 'today'. The chart, indicators, autopilot, and AI analysis only see data up to that date — exactly what someone living through that day would have seen. Step forward day-by-day to find out what actually happened. Click 'Return to live' to exit. Keyboard: ← steps back one day, → steps forward.">Replay date:</span>
@@ -369,24 +379,6 @@
       </div>
     </div>
 
-    <div class="ai-box">
-      <div class="row">
-        <h3 style="margin:0">AI Candle Analysis</h3>
-        <div class="grow"></div>
-        <button class="btn gold" id="btn-analyse" data-tip="Send the last 30 candles + indicator readings to Claude (via your Cloudflare proxy) and get a 4-bullet read on this stock. Requires AI proxy URL set up at the top of the page.">Analyse latest candle</button>
-        <button class="btn" id="btn-briefing" data-tip="Ask Claude for a one-paragraph morning briefing covering all four tickers. Requires AI proxy URL.">Morning briefing</button>
-      </div>
-      <div class="out empty" id="ai-out">Click "Analyse latest candle" to ask Claude about today's price action. Requires a Cloudflare proxy URL above so your API key never leaves your machine.</div>
-    </div>
-
-    <div class="ai-box">
-      <div class="row">
-        <h3 style="margin:0">Historical Analogs</h3>
-        <div class="grow"></div>
-        <button class="btn gold" id="btn-analogs" data-tip="Find historical days across all four tickers where the setup matched today's (trend vs MA200, RSI bucket, volume regime). Show the distribution of what happened in the next 30 trading days. This is honest 'prediction' — pure history lookup, no AI guessing.">Find analogs</button>
-      </div>
-      <div class="out empty" id="analog-out">Click "Find analogs" to scan history for setups that look like today's. The lab will find similar moments across all four tickers and show what happened in the next 30 days for each. No predictions — just history.</div>
-    </div>
   </div>
 
   <!-- ============================================================ -->
@@ -458,12 +450,35 @@
         </div>
       </div>
 
+      <div class="card" style="margin-top:12px">
+        <div class="card-hdr">
+          <h3>Historical Analogs</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-analogs')">▬</button></div>
+          <button class="btn gold" id="btn-analogs" style="margin-left:8px" data-tip="Find historical days across all four tickers where the setup matched today's (trend vs MA200, RSI bucket, volume regime). Show what happened in the next 30 trading days. Pure history — no AI guessing.">Find analogs</button>
+        </div>
+        <div id="body-analogs">
+          <div class="out empty" id="analog-out">Click "Find analogs" to scan history for setups that look like today's. No predictions — just history.</div>
+        </div>
+      </div>
+
     </div><!-- /rtab trade -->
 
     <!-- ── AUTOPILOT tab ──────────────────────────────────────── -->
     <div class="rtab-panel" data-tab="autopilot">
 
       <div class="card">
+        <div class="card-hdr">
+          <h3>AI Candle Analysis</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-ai')">▬</button></div>
+          <button class="btn gold" id="btn-analyse" style="margin-left:8px" data-tip="Send the last 30 candles + indicator readings to Claude and get a 4-bullet read on this stock. Requires AI proxy URL in Settings.">Analyse</button>
+          <button class="btn" id="btn-briefing" style="margin-left:4px" data-tip="Ask Claude for a one-paragraph morning briefing covering all four tickers.">Briefing</button>
+        </div>
+        <div id="body-ai">
+          <div class="out empty" id="ai-out">Click "Analyse" to get Claude's read on today's price action.</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
         <div class="card-hdr">
           <h3>AI Autopilot</h3>
           <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-autopilot')">▬</button></div>
@@ -1061,6 +1076,14 @@ function updateProxyStatus(){
   const s = document.getElementById('proxy-status');
   s.textContent = state.proxy ? 'configured' : 'not configured';
   s.style.color = state.proxy ? 'var(--green)' : 'var(--muted)';
+  _updateSettingsLine();
+}
+function _updateSettingsLine(){
+  const line = document.getElementById('settings-status-line');
+  if (!line) return;
+  const ai   = state.proxy      ? '🟢 AI' : '🔴 AI';
+  const data = state.yahooProxy ? (state.dataMode === 'live' ? '🟢 Live data' : '🟡 Yahoo URL set') : '🔴 Synthetic data';
+  line.textContent = ai + '  ·  ' + data;
 }
 
 function updateYahooStatus(){
@@ -1084,6 +1107,7 @@ function updateYahooStatus(){
     status.textContent = 'synthetic data (set Yahoo URL to enable live)';
     if (pill){ pill.textContent = 'SYNTHETIC DATA'; pill.style.color = 'var(--muted)'; }
   }
+  _updateSettingsLine();
 }
 
 // Fetch one ticker's OHLC from the user's Yahoo proxy Worker.
