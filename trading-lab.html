@@ -281,6 +281,13 @@
 
 </details>
 
+<details id="replay-details">
+<summary style="padding:6px 16px;background:var(--panel-2);border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none">
+  <span style="font-size:14px">⏪</span>
+  <span style="color:var(--gold);font-weight:600">Replay Mode</span>
+  <span style="font-size:11px;color:var(--muted)">— step through history day by day</span>
+  <span style="margin-left:auto;font-size:10px;color:var(--muted)">click to expand ▾</span>
+</summary>
 <div class="config-bar" id="replay-bar">
   <span data-tip="Replay Mode pretends a chosen historical date is 'today'. The chart, indicators, autopilot, and AI analysis only see data up to that date — exactly what someone living through that day would have seen. Step forward day-by-day to find out what actually happened. Click 'Return to live' to exit. Keyboard: ← steps back one day, → steps forward.">Replay date:</span>
   <input id="replay-date" type="date" />
@@ -290,6 +297,7 @@
   <button class="btn" id="btn-replay-fwd" disabled data-tip="Step forward one trading day — the next candle is revealed. Keyboard shortcut: → (right arrow).">▶</button>
   <button class="btn" id="btn-replay-live" disabled data-tip="Exit Replay Mode and return to the most recent data.">Return to live</button>
 </div>
+</details>
 
 <div class="tabs" id="tabs"></div>
 
@@ -356,8 +364,9 @@
           </div>
           <div class="ohlc" id="ohlc"></div>
         </div>
-        <div class="action-key">
-          <span>Action key:</span>
+        <details style="margin-top:4px">
+          <summary style="font-size:11px;color:var(--muted);cursor:pointer;padding:2px 0;list-style:none">▸ Action key</summary>
+          <div class="action-key" style="margin-top:4px">
           <span>🟢 potential entry</span>
           <span>🔴 consider taking profit</span>
           <span>⚠️ caution</span>
@@ -367,7 +376,8 @@
           <span>🔨 hammer (bullish reversal)</span>
           <span>⭐ shooting star (bearish reversal)</span>
           <span>⚫ doji (indecision)</span>
-        </div>
+          </div>
+        </details>
         <div class="chart-box short">
           <canvas id="volume-chart"></canvas>
           <div class="legend"><span>Volume</span></div>
