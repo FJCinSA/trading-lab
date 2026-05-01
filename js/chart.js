@@ -13,6 +13,7 @@
 import { state, saveSR }              from './state.js';
 import { detectPatterns, detectActions } from './patterns.js';
 import { MARKET_EVENTS, EVENT_COLOURS }  from './events.js';
+import { TF_STEPS }                      from './config.js';
 
 // Injected render callback — set by initChart(), never null after boot
 let _render = null;
@@ -26,6 +27,18 @@ let _dragMoved    = false;
 
 // Last drawn chart geometry — used by showCrosshair() and S/R click
 let chartGeom = null;
+
+// Crosshair snapshot — saved after drawCandles() so showCrosshair() can
+// restore the clean chart with a single putImageData() instead of a
+// full _render() call on every mousemove (dramatic perf improvement).
+let _chartSnapshot   = null;
+let _chartSnapshotW  = 0;
+let _chartSnapshotH  = 0;
+
+// Pre-built event date map — MARKET_EVENTS is static so build it once
+// at module load rather than on every drawCandles() call.
+const _EVENT_MAP = {};
+for (const ev of MARKET_EVENTS) _EVENT_MAP[ev.date] = ev;
 
 /**
  * Inject the main render function so chart event handlers can call it.
@@ -83,10 +96,6 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
 
   const padL = 50, padR = 12, padT = 14, padB = 22;
   const w = W - padL - padR, h = H - padT - padB;
-
-  // Precompute event date map (date → event) once per draw
-  const _evMap = {};
-  for (const ev of MARKET_EVENTS) _evMap[ev.date] = ev;
 
   // Price range: include all drawn data + SR lines
   let lo = Infinity, hi = -Infinity;
@@ -316,7 +325,7 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
     const FY = padT + 1;  // flag sits at very top of chart area
 
     for (let i = 0; i < candles.length; i++) {
-      const ev = _evMap[candles[i].d];
+      const ev = _EVENT_MAP[candles[i].d];
       if (!ev) continue;
       const x   = padL + i * cw + cw / 2;
       const col = EVENT_COLOURS[ev.category] || '#888';
@@ -375,7 +384,12 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
 
   // Save geometry for crosshair + SR click
   chartGeom = { padL, padT, padR, padB, w, h, lo, hi, cw, candles, W, H, ma50, ma200, rsiArr,
-                evMap: state.indicators.events ? _evMap : null };
+                evMap: state.indicators.events ? _EVENT_MAP : null };
+
+  // Save canvas snapshot for fast crosshair restore (avoids full _render() on every mousemove)
+  _chartSnapshotW = W;
+  _chartSnapshotH = H;
+  _chartSnapshot  = ctx.getImageData(0, 0, W, H);
 
   // Set grab cursor — shows the user the chart is draggable
   cv.style.cursor = 'grab';
@@ -450,8 +464,7 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
   // ── Scroll wheel: zoom in / out ───────────────────────────────────
   cv.onwheel = (e) => {
     e.preventDefault();
-    const TF_STEPS = [30, 90, 180, 365, 730];
-    const curIdx   = TF_STEPS.findIndex(v => v >= state.timeframe);
+    const curIdx = TF_STEPS.findIndex(v => v >= state.timeframe);
     const idx      = curIdx < 0 ? TF_STEPS.length - 1 : curIdx;
     const newIdx   = e.deltaY > 0
       ? Math.min(TF_STEPS.length - 1, idx + 1)   // scroll down = zoom out
@@ -478,11 +491,18 @@ function showCrosshair(x, y) {
     return;
   }
 
-  // Redraw the chart cleanly before overlaying the cross
-  if (_render) _render();
-
+  // Restore clean chart snapshot instead of a full _render() call —
+  // this avoids recalculating indicators, reattaching events, and redrawing
+  // all candles on every single mousemove (huge CPU saving).
   const cv  = document.getElementById('price-chart');
   const ctx = cv.getContext('2d');
+  if (_chartSnapshot && cv.width === _chartSnapshotW && cv.height === _chartSnapshotH) {
+    ctx.putImageData(_chartSnapshot, 0, 0);
+  } else if (_render) {
+    // Fallback: canvas was resized since last draw — do a full render
+    _render();
+    return; // showCrosshair will be retriggered by the new draw
+  }
 
   // Dashed crosshair lines
   ctx.save();

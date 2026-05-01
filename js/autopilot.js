@@ -265,17 +265,21 @@ export function pilotTick() {
     return false;
   }
 
-  // Determine current mode from uptrend count
-  let inUptrend = 0;
-  for (const t of TICKERS) {
-    const all = state.data[t.sym];
-    const idx = Math.min(autopilotState.currentIdx[t.sym] - 1, all.length - 1);
-    if (idx < 200) continue;
-    const closes = all.slice(0, idx + 1).map(c => c.c);
-    const ma200L = sma(closes, 200).pop();
-    if (ma200L != null && all[idx].c > ma200L) inUptrend++;
+  // Determine current mode from uptrend count — only recalculate every 20 ticks.
+  // MA200 changes slowly; updating every tick costs 24 × sma() calls each step,
+  // which dominates CPU in instant-speed runs (≥12 000 ticks total).
+  if (autopilotState.daysProcessed % 20 === 0) {
+    let inUptrend = 0;
+    for (const t of TICKERS) {
+      const all = state.data[t.sym];
+      const idx = Math.min(autopilotState.currentIdx[t.sym] - 1, all.length - 1);
+      if (idx < 200) continue;
+      const closes = all.slice(0, idx + 1).map(c => c.c);
+      const ma200L = sma(closes, 200).pop();
+      if (ma200L != null && all[idx].c > ma200L) inUptrend++;
+    }
+    autopilotState.mode = inUptrend >= 2 ? 'TREND' : 'DEFENSIVE';
   }
-  autopilotState.mode = inUptrend >= 2 ? 'TREND' : 'DEFENSIVE';
 
   renderPilot();
   updateAutopilotUI();

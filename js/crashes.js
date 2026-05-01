@@ -46,24 +46,6 @@ export const CRASH_SCENARIOS = [
     ]
   },
   {
-    id: 'dotcom-2000',
-    name: 'Dot-com Crash',
-    ticker: 'QQQ',
-    subtitle: 'Mar 2000 – Oct 2002  ·  −83%',
-    magnitude: '-83%',
-    duration: '31 months',
-    startDate: '2000-01-03',
-    endDate:   '2002-10-31',    // trough: Nasdaq 100 bottom
-    fetchStart: null,           // QQQ started Mar 1999 — fetch from inception
-    fetchEnd:   '2004-12-31',   // covers full crash (Oct 2002 trough) + recovery
-    context: [
-      "It's January 2000. The internet has changed everything. Companies with no revenue and no profits are worth billions. Every cab driver has stock tips. The Nasdaq has tripled in two years.",
-      "Amazon, Webvan, pets.com — they're all going to be trillion-dollar companies. The \"new economy\" has abolished old valuation rules. The QQQ Nasdaq 100 ETF has just made its all-time high at $118.",
-      "Your mission: Step through the 2000–2002 dot-com crash day-by-day. No hindsight. What does a death cross look like when you don't know how far it will fall? When do the 'buy the dip' moments stop working?",
-      "Key question: How many times do you buy the dip before you stop? Note that QQQ took 15 years to return to its 2000 high."
-    ]
-  },
-  {
     id: 'covid-2020',
     name: 'COVID-19 Crash',
     ticker: 'SPY',
@@ -79,61 +61,6 @@ export const CRASH_SCENARIOS = [
       "\"It's just like SARS\" says every commentator. Most analysts expect China to contain it within weeks. Markets are up. Tech earnings are strong. Everything is fine.",
       "This is the fastest major market crash in history — −34% in 33 calendar days. The circuit breakers triggered four times in a single month. The VIX reached 85, higher than in 2008.",
       "Key question: Do you buy on March 23 — the exact bottom — or do you wait for confirmation that never comes in time?"
-    ]
-  },
-  {
-    id: 'meta-2022',
-    name: 'META 2022 Crash',
-    ticker: 'META',
-    subtitle: 'Sep 2021 – Nov 2022  ·  −77%',
-    magnitude: '-77%',
-    duration: '14 months',
-    startDate: '2021-07-01',
-    endDate:   '2022-11-30',    // trough: META bottomed ~Nov 2022
-    fetchStart: '2018-01-01',   // META listed 2012; 3 years warmup
-    fetchEnd:   '2024-12-31',   // covers crash (Nov 2022 trough) + recovery
-    context: [
-      "It's July 2021. Meta Platforms (formerly Facebook) has just reported record revenues — $29 billion in a quarter. Mark Zuckerberg has declared he's building the metaverse. The stock has tripled in four years.",
-      "One year and four months later, it will be down 77% — destroying $700 billion in market cap. It's one of the largest single-stock destructions of value in US market history.",
-      "Your mission: Follow Meta from peak to trough. This is not a macro crash — it's a single company's self-inflicted implosion in a rising interest rate environment. Watch the RSI signals. Watch the death cross. Watch the volume on down days vs up days.",
-      "Key question: Could technical analysis have warned you before the earnings disappointments became public knowledge?"
-    ]
-  },
-  {
-    id: 'yen-carry-2024',
-    name: 'Yen Carry Unwind',
-    ticker: 'SPY',
-    subtitle: 'Aug 2024  ·  −10% in 3 days',
-    magnitude: '-10%',
-    duration: '~2 weeks',
-    startDate: '2024-07-15',
-    endDate:   '2024-09-15',    // ~6 weeks covering the panic + full recovery
-    fetchStart: '2022-01-01',   // 2.5 years warmup
-    fetchEnd:   null,           // fetch up to today (recent event)
-    context: [
-      "It's July 15, 2024. The Bank of Japan has just raised interest rates for only the second time in 17 years — a tiny 0.25% move. To most observers, it's a non-event. No one talks about it.",
-      "But for years, traders worldwide have been borrowing cheaply in yen and investing in higher-yield US assets — the 'yen carry trade.' When Japan raised rates, the cost of that trade changed overnight. Suddenly everyone needed to close the same position at once.",
-      "What followed was a 3-day global meltdown. The Nikkei fell 12% in a single day — its worst session since 1987. The VIX spiked to 65. Circuit breakers fired. Forced liquidations everywhere. Everything sold together.",
-      "Key question: Is this panic or prophecy? The market recovered in two weeks. How many people sold at the bottom?"
-    ]
-  },
-  {
-    id: 'usdzar-2015',
-    name: 'USDZAR Dec 2015',
-    ticker: 'SOL',
-    subtitle: 'Dec 2015  ·  ZAR −25%  ·  SOL −40%',
-    magnitude: '-40%',
-    duration: '~8 weeks',
-    startDate: '2015-11-01',
-    endDate:   '2016-06-30',    // covers the Nene-firing shock + partial recovery
-    fetchStart: '2012-01-01',   // 4 years warmup for SOL.JO
-    fetchEnd:   '2018-12-31',   // covers event + 3 years aftermath
-    context: [
-      "It's the evening of Wednesday December 9, 2015 in South Africa. President Jacob Zuma has just fired Finance Minister Nhlanhla Nene — a respected figure who had been holding the budget line — and replaced him with a political unknown.",
-      "The rand goes into freefall. The dollar buys R17, then R18, touching R17.90 in days. This is one of the most dramatic single-night currency collapses in South Africa's democratic history. The JSE opens in chaos the next morning.",
-      "Sasol (SOL.JO), priced in rand but with dollar-linked oil revenues, becomes the proxy instrument for watching this ZAR crisis play out on a daily chart. On some days it gains while rand costs fall; on others, market panic crushes everything.",
-      "Warning signs: The rand had already been weakening for months. Commodity prices (oil) had been falling since mid-2014. Eskom load-shedding was intensifying. None of these individually screamed 'sell' — but together, in hindsight, the pressure was building.",
-      "Key question: How many trading sessions before the chart gives you a clear signal? Watch the volume spike on December 10 and the pattern that follows over the next two weeks."
     ]
   },
 

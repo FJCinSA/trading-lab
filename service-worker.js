@@ -2,7 +2,7 @@
 // Caches the app shell so it works offline / loads instantly on revisit.
 // Bump CACHE_VERSION any time you deploy a new version to force refresh.
 
-const CACHE_VERSION = 'fjc-trading-lab-v28';
+const CACHE_VERSION = 'fjc-trading-lab-v29';
 const APP_SHELL = [
   './',
   './index.html',

@@ -13,7 +13,7 @@
 //   Edit js/config.js — append one object to TICKERS. Done.
 // ============================================================
 
-import { TICKERS, LS_PROXY, LS_YAHOO_PROXY, LS_FX } from './config.js';
+import { TICKERS, LS_PROXY, LS_YAHOO_PROXY, LS_FX, TF_STEPS } from './config.js';
 import { state, defaultPortfolio, defaultPilot,
          savePortfolio, savePilot, saveSR }          from './state.js';
 import { sma, bollinger, rsi }                         from './indicators.js';
@@ -33,7 +33,8 @@ import { pilotEngage, pilotDisengage, renderPilot,
 import { renderAnalogs }                               from './analogs.js';
 import { initReplay, setupReplayMode, enterReplay,
          updateReplayUI }                              from './replay.js';
-import { addJournalEntry, renderJournal, clearJournal } from './journal.js';
+import { addJournalEntry, renderJournal, clearJournal,
+         getAllJournalEntries }                          from './journal.js';
 import { renderCrashes, showCrashContext,
          hideCrashContext }                              from './crashes.js';
 import { renderCurriculum, closeLesson }               from './curriculum.js';
@@ -513,7 +514,6 @@ function bindControls() {
   });
 
   // ---- Zoom buttons (also wired to scroll wheel in chart.js) ----
-  const TF_STEPS = [30, 90, 180, 365, 730];
   function _setTf(newTf) {
     state.timeframe = newTf;
     document.querySelectorAll('#tf button').forEach(b => {
@@ -626,7 +626,7 @@ function bindControls() {
   document.getElementById('btn-clear-journal').onclick = clearJournal;
 
   document.getElementById('btn-export-journal').onclick = () => {
-    const entries = state.journal || [];
+    const entries = getAllJournalEntries();
     if (!entries.length) { alert('No journal entries to export yet.'); return; }
 
     const ESC = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
@@ -900,7 +900,6 @@ async function jumpToCrash(scenario) {
 
   state.timeframe = newTf;
   // Highlight the closest standard TF button as a reference point
-  const TF_STEPS = [30, 90, 180, 365, 730];
   const closestTf = TF_STEPS.reduce((a, b) => Math.abs(b - newTf) < Math.abs(a - newTf) ? b : a);
   document.querySelectorAll('#tf button').forEach(b => {
     b.classList.toggle('on', +b.dataset.tf === closestTf);
@@ -1179,7 +1178,7 @@ function updateRRCalc(closePrice = null) {
   const ratio     = rewardPerShare / riskPerShare;
   const totalRisk = riskPerShare * qty;
   const cash      = state.portfolio.cash + Object.values(state.portfolio.positions)
-                      .reduce((s, p) => s + p.qty * p.avg, 0);
+                      .reduce((s, p) => s + (p.shares || 0) * p.avg, 0);
   const pctRisk   = cash > 0 ? (totalRisk / cash) * 100 : 0;
 
   // Determine currency prefix from active ticker
@@ -1423,8 +1422,13 @@ initChart(render);
 // trigger redraws and restore the Yahoo status pill on exitReplay().
 initReplay(render, updateYahooStatus);
 
-// Redraw on every window resize so the canvas fills its container correctly
-window.addEventListener('resize', () => render());
+// Redraw on window resize — debounced 100 ms so rapid resize events don't
+// flood the render pipeline (common on desktop when dragging window edges).
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(render, 100);
+});
 
 // Boot the app
 init();

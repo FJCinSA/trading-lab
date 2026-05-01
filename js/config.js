@@ -171,3 +171,6 @@ export const ENVELOPE_DRAWDOWN_PCT = 15;
 
 // Historical analog / edge look-forward window (trading days)
 export const HIST_FORWARD_DAYS = 30;
+
+// Timeframe steps shared by chart wheel handler, bindControls, and jumpToCrash
+export const TF_STEPS = [30, 90, 180, 365, 730];
