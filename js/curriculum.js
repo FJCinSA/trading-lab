@@ -792,7 +792,8 @@ detailed trading notes. The notes are not a memory aid. They are the mechanism b
 experience becomes wisdom rather than just the passage of time.</p>`
       }
     ]
-  }
+  },
+
   // ---- LESSON 11 ----
   {
     id: 'support-resistance',

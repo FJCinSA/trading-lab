@@ -1303,21 +1303,15 @@ function updateClocks() {
 // ------------------------------------------------------------------
 
 function init() {
-  console.log('[FJC] init() start');
   // Seed synthetic data for every ticker
   for (const t of TICKERS) state.data[t.sym] = genCandles(t);
-  console.log('[FJC] genCandles done');
 
   // Compute initial historical edge (before any live data arrives)
   state.historicalEdge = computeHistoricalEdge();
-  console.log('[FJC] computeHistoricalEdge done');
 
   buildTabs();
-  console.log('[FJC] buildTabs done');
   bindSearchBar();
-  console.log('[FJC] bindSearchBar done');
   bindControls();
-  console.log('[FJC] bindControls done');
   updateClocks();
   setInterval(updateClocks, 30000);
   render();
@@ -1433,17 +1427,8 @@ initReplay(render, updateYahooStatus);
 window.addEventListener('resize', () => render());
 
 // Boot the app
-console.log('[FJC] module top-level reached — calling init()');
-try {
-  init();
-} catch(e) {
-  console.error('[FJC] init() threw:', e);
-}
-try {
-  setupReplayMode();
-} catch(e) {
-  console.error('[FJC] setupReplayMode() threw:', e);
-}
+init();
+setupReplayMode();
 
 // Auto-fetch live prices if the user already has a Yahoo proxy configured
 if (state.yahooProxy) refreshAllFromYahoo(_onYahooSuccess);
