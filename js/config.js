@@ -155,6 +155,12 @@ export const TICKERS = [
   },
 ];
 
+// Default Cloudflare Worker proxy URLs — baked in so the app works on any
+// computer without manual configuration. Users can still override these in
+// Settings; the override is stored in localStorage and takes precedence.
+export const DEFAULT_YAHOO_PROXY  = 'https://yahoo-proxy.fjcspeel.workers.dev/';
+export const DEFAULT_CLAUDE_PROXY = 'https://trading-proxy.fjcspeel.workers.dev/';
+
 // localStorage keys — versioned so a schema change doesn't corrupt old data
 export const LS_PORTFOLIO   = 'fjc-trading-portfolio-v1';
 export const LS_ALERTS      = 'fjc-trading-alerts-v1';

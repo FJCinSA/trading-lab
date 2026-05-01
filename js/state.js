@@ -12,7 +12,8 @@
 // ============================================================
 
 import { TICKERS, LS_PORTFOLIO, LS_ALERTS, LS_PROXY, LS_SR,
-         LS_PILOT, LS_YAHOO_PROXY, LS_FX } from './config.js';
+         LS_PILOT, LS_YAHOO_PROXY, LS_FX,
+         DEFAULT_CLAUDE_PROXY, DEFAULT_YAHOO_PROXY } from './config.js';
 
 // ------------------------------------------------------------------
 // Default factory functions (also called by autopilot & portfolio reset)
@@ -66,8 +67,8 @@ export const state = {
   alerts:    loadAlerts(),
   pilot:     loadPilot(),
 
-  proxy:      localStorage.getItem(LS_PROXY)       || '',
-  yahooProxy: localStorage.getItem(LS_YAHOO_PROXY) || '',
+  proxy:      localStorage.getItem(LS_PROXY)       || DEFAULT_CLAUDE_PROXY,
+  yahooProxy: localStorage.getItem(LS_YAHOO_PROXY) || DEFAULT_YAHOO_PROXY,
   fxUsdZar:   parseFloat(localStorage.getItem(LS_FX)) || 18.50,
 
   dataMode:   'synthetic',  // 'synthetic' | 'live'
