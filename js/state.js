@@ -92,7 +92,12 @@ export const state = {
   // Pan offset — how many candles back from the most recent to anchor the right edge.
   // 0 = live (right edge = latest candle). Positive = panned back in time.
   // Reset to 0 on ticker switch, replay step, and exit-replay.
-  viewOffset: 0
+  viewOffset: 0,
+
+  // Vertical pan offset — price units added to the visible lo/hi range.
+  // 0 = auto-fit (range derived from visible candles). Non-zero = user has dragged
+  // the chart up or down. Reset to 0 on ticker switch and timeframe change.
+  priceOffset: 0
 };
 
 // ------------------------------------------------------------------

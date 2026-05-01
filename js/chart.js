@@ -20,10 +20,13 @@ let _render = null;
 
 // Module-level drag state — persists across render() calls so drag isn't
 // broken by intermediate redraws triggered during a pointer-move.
-let _dragActive   = false;
-let _dragStartX   = 0;
-let _dragStartOff = 0;
-let _dragMoved    = false;
+let _dragActive        = false;
+let _dragStartX        = 0;
+let _dragStartY        = 0;
+let _dragStartOff      = 0;
+let _dragStartPriceOff = 0;
+let _dragStartPPP      = 0;   // price-per-pixel at drag start (for vertical pan mapping)
+let _dragMoved         = false;
 
 // Last drawn chart geometry — used by showCrosshair() and S/R click
 let chartGeom = null;
@@ -100,6 +103,10 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
   // Price range: include all drawn data + SR lines
   let lo = Infinity, hi = -Infinity;
   for (const c of candles) { if (c.l < lo) lo = c.l; if (c.h > hi) hi = c.h; }
+  // Apply vertical pan offset (user dragging chart up/down). Shifts the whole
+  // visible range without changing the scale — identical behaviour to horizontal pan.
+  const _priceOff = state.priceOffset || 0;
+  if (_priceOff !== 0) { lo += _priceOff; hi += _priceOff; }
   if (state.indicators.bb) {
     for (const v of bbUp) if (v != null && v > hi) hi = v;
     for (const v of bbDn) if (v != null && v < lo) lo = v;
@@ -396,10 +403,14 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
 
   // ── Pointer events: drag-to-pan (Google Maps style) ──────────────
   cv.onpointerdown = (e) => {
-    _dragActive   = true;
-    _dragStartX   = e.clientX;
-    _dragStartOff = state.viewOffset || 0;
-    _dragMoved    = false;
+    _dragActive        = true;
+    _dragStartX        = e.clientX;
+    _dragStartY        = e.clientY;
+    _dragStartOff      = state.viewOffset || 0;
+    _dragStartPriceOff = state.priceOffset || 0;
+    // Capture price-per-pixel now so vertical mapping stays stable during the drag
+    _dragStartPPP      = chartGeom ? (chartGeom.hi - chartGeom.lo) / chartGeom.h : 0;
+    _dragMoved         = false;
     cv.setPointerCapture(e.pointerId);  // keep events even if cursor leaves canvas
     cv.style.cursor = 'grabbing';
   };
@@ -413,17 +424,25 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
       showCrosshair(x, y);
       return;
     }
-    // Dragging — pan the chart
+    // Dragging — pan the chart horizontally and/or vertically
     const deltaX = e.clientX - _dragStartX;
-    if (Math.abs(deltaX) > 4) _dragMoved = true;
+    const deltaY = e.clientY - _dragStartY;
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) _dragMoved = true;
     if (_dragMoved && chartGeom) {
-      // Negative deltaX (drag left) = move forward in time (reduce offset)
-      // Positive deltaX (drag right) = move back in time (increase offset)
+      // Horizontal: negative deltaX (drag left) = move forward in time (reduce offset)
+      //             positive deltaX (drag right) = move back in time (increase offset)
       const deltaCandlesCont = -deltaX / chartGeom.cw;
       const newOff = Math.round(_dragStartOff + deltaCandlesCont);
       const all    = state.data[state.active] || [];
       const maxOff = Math.max(0, all.length - state.timeframe);
       state.viewOffset = Math.max(0, Math.min(maxOff, newOff));
+
+      // Vertical: negative deltaY (drag up) = view higher prices (positive price offset)
+      //           positive deltaY (drag down) = view lower prices (negative price offset)
+      if (_dragStartPPP > 0) {
+        state.priceOffset = _dragStartPriceOff + (-deltaY * _dragStartPPP);
+      }
+
       if (_render) _render();
     }
   };

@@ -344,8 +344,9 @@ function buildTabs() {
     b.textContent = t.sym + '  ' + t.name;
     if (t.desc) b.dataset.tip = t.desc;
     b.onclick = () => {
-      state.active     = t.sym;
-      state.viewOffset = 0;
+      state.active      = t.sym;
+      state.viewOffset  = 0;
+      state.priceOffset = 0;
       // Cinematic fade between tickers
       const cv = document.getElementById('price-chart');
       if (cv) { cv.classList.remove('chart-fade'); void cv.offsetWidth; cv.classList.add('chart-fade'); }
@@ -446,9 +447,10 @@ function bindSearchBar() {
   }
 
   function selectInstrument(sym) {
-    state.active     = sym;
-    state.viewOffset = 0;
-    input.value      = '';
+    state.active      = sym;
+    state.viewOffset  = 0;
+    state.priceOffset = 0;
+    input.value       = '';
     clearBtn.style.display = 'none';
     hideDropdown();
     const cv = document.getElementById('price-chart');
@@ -938,7 +940,8 @@ async function jumpToCrash(scenario) {
   });
 
   // Reset pan so the crash opens at the right position
-  state.viewOffset = 0;
+  state.viewOffset  = 0;
+  state.priceOffset = 0;
 
   // Activate crash study state so chart.js draws the crash zone overlay
   state.crashStudy = scenario;
