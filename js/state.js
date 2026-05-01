@@ -57,7 +57,7 @@ function loadPilot() {
 export const state = {
   active:    'TDY',
   timeframe: 30,
-  indicators: { ma50: true, ma200: true, bb: false, patterns: true, actions: true, sr: false },
+  indicators: { ma50: true, ma200: true, bb: false, patterns: true, actions: true, sr: false, events: true },
 
   data:      {},            // keyed by ticker sym; populated by genCandles or fetchYahoo
   sr:        loadSR(),      // support/resistance lines: { TDY: [price, ...], ... }

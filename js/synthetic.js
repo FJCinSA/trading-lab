@@ -34,7 +34,7 @@ export function mulberry32(a) {
  * @param {number} n - number of calendar days to attempt (actual trading days fewer)
  * @returns {{ d: string, o: number, h: number, l: number, c: number, v: number }[]}
  */
-export function genCandles(t, n = 400) {
+export function genCandles(t, n = 1500) {
   // Seed from ticker symbol characters so each sym gives a unique sequence
   let seed = 0;
   for (const ch of t.sym) seed = (seed * 31 + ch.charCodeAt(0)) & 0xffffffff;

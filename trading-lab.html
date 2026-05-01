@@ -45,6 +45,7 @@
   .toggle{padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);font-size:12px;cursor:pointer;font-weight:600}
   .toggle.on{background:var(--cream);color:#1a1408;border-color:var(--cream)}
   .toggle.actions.on{background:var(--gold);color:#1a1408;border-color:var(--gold)}
+  .toggle.events.on{background:var(--blue);color:#fff;border-color:var(--blue)}
   .timeframe{display:flex;gap:4px}
   .timeframe button{padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);cursor:pointer;font-size:12px;font-weight:600}
   .timeframe button.on{background:var(--gold);color:#1a1408;border-color:var(--gold)}
@@ -122,6 +123,19 @@
   .je-qty{color:var(--cream);font-variant-numeric:tabular-nums;font-size:11px}
   .je-reasoning{color:var(--cream);margin-top:2px;padding:4px 6px;background:rgba(255,255,255,.04);border-radius:4px}
   .je-pilot-ctx{color:var(--muted);margin-top:2px;font-style:italic;font-size:11px}
+  /* ---- Windows-style card minimize / restore ---- */
+  .card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .card-hdr h3,.card-hdr h4{margin:0;flex:1}
+  .wm-btns{display:flex;gap:3px;flex-shrink:0}
+  .wm-btn{width:18px;height:18px;border-radius:3px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);font-size:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;line-height:1;font-weight:900;vertical-align:middle}
+  .wm-btn:hover{background:var(--gold);color:#1a1408;border-color:var(--gold)}
+  /* ---- Right-panel tab bar ---- */
+  .rtab-bar{display:flex;gap:3px;margin-bottom:10px}
+  .rtab-btn{flex:1;padding:8px 4px;border:1px solid var(--line);border-radius:8px 8px 0 0;background:var(--panel-2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;text-align:center;border-bottom-color:var(--line)}
+  .rtab-btn.active{background:var(--panel);color:var(--gold);border-color:var(--gold);border-bottom-color:var(--panel)}
+  .rtab-btn:hover:not(.active){color:var(--text);background:var(--panel)}
+  .rtab-panel{display:none}
+  .rtab-panel.active{display:block}
   /* ---- End Journal ---- */
   .autopilot-status{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px}
   .ap-led{width:14px;height:14px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s,box-shadow .3s}
@@ -262,7 +276,7 @@
   <input id="replay-date" type="date" />
   <button class="btn" id="btn-replay-start" data-tip="Begin replay from the chosen date. Chart will pretend that date is 'today' until you click 'Return to live'.">Start replay</button>
   <button class="btn" id="btn-replay-back" disabled data-tip="Step back one trading day. Keyboard shortcut: ← (left arrow).">◀</button>
-  <span id="replay-display" style="min-width:96px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums">live</span>
+  <span id="replay-display" style="min-width:96px;color:var(--muted);font-variant-numeric:tabular-nums">live</span>
   <button class="btn" id="btn-replay-fwd" disabled data-tip="Step forward one trading day — the next candle is revealed. Keyboard shortcut: → (right arrow).">▶</button>
   <button class="btn" id="btn-replay-live" disabled data-tip="Exit Replay Mode and return to the most recent data.">Return to live</button>
 </div>
@@ -310,6 +324,7 @@
           <button class="toggle on" data-ind="patterns" data-tip="Show candlestick pattern markers ABOVE the candle: Hammer, Shooting Star, Morning Star, Doji. Classic price-action signals.">Patterns</button>
           <button class="toggle actions on" data-ind="actions" data-tip="Show action emojis BELOW the candle at moments where a decision might be warranted (Golden Cross, Death Cross, RSI extremes).">Actions</button>
           <button class="toggle" data-ind="sr" data-tip="Toggle support/resistance drawing mode. When ON, click anywhere on the chart to place a horizontal price line.">Draw S/R</button>
+          <button class="toggle events on" data-ind="events" data-tip="Show market event flags on the chart — coloured pins marking major crashes, Fed decisions, geopolitical shocks, and more. Hover a flag for the full story.">📅 Events</button>
           <button class="btn" id="clear-sr" data-tip="Remove all support/resistance lines for this ticker.">Clear S/R</button>
           <span style="width:1px;background:var(--line);align-self:stretch;margin:0 2px"></span>
           <select id="overlay-sym" class="btn" style="font-size:12px;padding:5px 8px"
@@ -374,159 +389,206 @@
     </div>
   </div>
 
+  <!-- ============================================================ -->
+  <!-- Right panel — tabbed layout                                  -->
+  <!-- 📊 Trade | 🤖 Autopilot | 📓 Journal | 🎓 Learn             -->
+  <!-- ============================================================ -->
   <div>
-    <div class="card">
-      <h3 style="margin-top:0">Signals</h3>
-      <div class="signals" id="signals"></div>
+
+    <div class="rtab-bar">
+      <button class="rtab-btn active" data-tab="trade"     onclick="rtab('trade')"    >📊 Trade</button>
+      <button class="rtab-btn"        data-tab="autopilot" onclick="rtab('autopilot')">🤖 Autopilot</button>
+      <button class="rtab-btn"        data-tab="journal"   onclick="rtab('journal')"  >📓 Journal</button>
+      <button class="rtab-btn"        data-tab="learn"     onclick="rtab('learn')"    >🎓 Learn</button>
     </div>
 
-    <div class="card" style="margin-top:12px">
-      <h3 style="margin-top:0">Historical Edge</h3>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">How each signal has performed on each ticker historically. Forward look: 30 trading days after the signal fires.</div>
-      <div id="edge-tables"></div>
-      <details>
-        <summary>+ More: how to read this</summary>
-        <p><b>Fires</b> = how many times this signal triggered in the full data history.</p>
-        <p><b>Win%</b> = percentage of those fires where the signal was right (entry/add: price went up over next 30d; trim/exit: price went down over next 30d, meaning we got out at a good time).</p>
-        <p><b>Avg</b> = average forward return 30 trading days after the signal.</p>
-        <p>A signal with low Fires (e.g. 1 or 2) is statistically meaningless — we just don't have enough data. Look for signals with at least 5 fires.</p>
-        <p><b>Green Win% (≥60%)</b> = signal has historical edge on this ticker. <b>Red Win% (&lt;40%)</b> = signal has historically failed on this ticker. Worth questioning before you act on it.</p>
-      </details>
-    </div>
+    <!-- ── TRADE tab ── Signals · Portfolio · Alerts ──────────── -->
+    <div class="rtab-panel active" data-tab="trade">
 
-    <div class="card" style="margin-top:12px">
-      <h3 style="margin-top:0">AI Autopilot</h3>
-      <div class="autopilot-status">
-        <div class="ap-led" id="ap-led"></div>
-        <div class="ap-text">
-          <div class="ap-state" id="ap-state">DISENGAGED</div>
-          <div class="ap-mode" id="ap-mode">Mode: idle</div>
+      <div class="card">
+        <div class="card-hdr">
+          <h3>Signals</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-signals')">▬</button></div>
         </div>
-        <div class="ap-speed">
-          Speed
-          <select id="ap-speed">
-            <option value="500">slow</option>
-            <option value="200" selected>normal</option>
-            <option value="50">fast</option>
-            <option value="0">instant</option>
-          </select>
+        <div id="body-signals">
+          <div class="signals" id="signals"></div>
         </div>
       </div>
-      <div class="ap-progress"><div id="ap-progress-bar"></div></div>
-      <div class="row" style="margin-bottom:6px">
-        <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;cursor:pointer" data-tip="When ON, autopilot skips any signal whose historical win rate on this ticker is below 50% (and where we have at least 5 historical fires to base it on). Skipped signals appear as SKIP in the log.">
-          <input type="checkbox" id="smart-filter" /> Smart Filter — skip signals with &lt;50% historical win rate
-        </label>
-      </div>
-      <div class="row">
-        <button class="btn gold" id="ap-engage" data-tip="Start the rule-based autopilot. It will walk through every day in the visible window, applying the trade rules. Disengages automatically if drawdown exceeds 15% (envelope protection).">Engage Autopilot</button>
-        <button class="btn" id="pilot-reset" data-tip="Stop the autopilot if running, reset its portfolio to R100,000, and clear the decision log.">Reset &amp; Stop</button>
-      </div>
-      <div class="pilot-stats">
-        <div class="pilot-stat"><div class="k">Pilot value</div><div class="v" id="pilot-value">R 100,000</div></div>
-        <div class="pilot-stat"><div class="k">Buy &amp; Hold</div><div class="v" id="pilot-bh">R 100,000</div></div>
-        <div class="pilot-stat"><div class="k">Pilot return</div><div class="v" id="pilot-return">0.0%</div></div>
-        <div class="pilot-stat"><div class="k">Drawdown</div><div class="v" id="pilot-dd">0.0%</div></div>
-      </div>
-      <h4>Decision Log</h4>
-      <ul class="decision-log" id="decision-log"></ul>
-      <details>
-        <summary>+ More: autopilot rules &amp; envelope</summary>
-        <p><b>Trade rules:</b> ENTER on Golden Cross + RSI&lt;65 (buy 25% cash). ADD on RSI bounce from oversold in uptrend (15%). TRIM half on RSI&gt;75. EXIT on Death Cross OR price 8% below MA200.</p>
-        <p><b>Envelope protection:</b> If portfolio drawdown exceeds 15% from peak, autopilot closes all positions and disengages — like an aircraft autopilot handing back when conditions exceed safe limits. You then decide whether to re-engage.</p>
-        <p><b>Modes:</b> TREND (most tickers above MA200, taking signals normally) | DEFENSIVE (most below MA200, mostly cash, watching for re-entry) | GROUNDED (envelope hit, all positions closed).</p>
-        <p><b>Position cap:</b> max 50% in any one ticker. <b>Cooldown:</b> 5 days between trades on same ticker. USD prices converted at R18.50/USD (learning simplification).</p>
-      </details>
-    </div>
 
-    <div class="card portfolio" style="margin-top:12px">
-      <h3 style="margin-top:0">Your Paper Portfolio</h3>
-      <div class="row" style="font-size:13px;margin-bottom:6px">
-        <span>Cash: <b id="p-cash">R 100,000.00</b></span>
-        <span class="grow"></span>
-        <span>Total: <b id="p-total">R 100,000.00</b></span>
+      <div class="card portfolio" style="margin-top:12px">
+        <div class="card-hdr">
+          <h3>Paper Portfolio</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-portfolio')">▬</button></div>
+        </div>
+        <div id="body-portfolio">
+          <div class="row" style="font-size:13px;margin-bottom:6px">
+            <span>Cash: <b id="p-cash">R 100,000.00</b></span>
+            <span class="grow"></span>
+            <span>Total: <b id="p-total">R 100,000.00</b></span>
+          </div>
+          <table>
+            <thead><tr><th>Ticker</th><th class="num">Shares</th><th class="num">Avg</th><th class="num">P/L</th></tr></thead>
+            <tbody id="p-rows"></tbody>
+          </table>
+          <div class="actions-row">
+            <input type="number" id="qty" placeholder="Qty" min="1" step="1" value="10" data-tip="Number of shares to buy or sell." />
+            <button class="btn buy"  id="btn-buy"  data-tip="Buy preview will appear here on hover.">Buy</button>
+            <button class="btn sell" id="btn-sell" data-tip="Sell preview will appear here on hover.">Sell</button>
+          </div>
+          <div style="margin-top:6px;font-size:11px;color:var(--muted)">Trades execute at the latest close. Stored locally in your browser.</div>
+          <button class="btn" id="reset-portfolio" style="margin-top:8px" data-tip="Wipe paper portfolio back to R100,000 cash, no positions.">Reset to R100,000</button>
+        </div>
       </div>
-      <table>
-        <thead><tr><th>Ticker</th><th class="num">Shares</th><th class="num">Avg</th><th class="num">P/L</th></tr></thead>
-        <tbody id="p-rows"></tbody>
-      </table>
-      <div class="actions-row">
-        <input type="number" id="qty" placeholder="Qty" min="1" step="1" value="10" data-tip="Number of shares to buy or sell." />
-        <button class="btn buy" id="btn-buy" data-tip="Buy preview will appear here on hover.">Buy</button>
-        <button class="btn sell" id="btn-sell" data-tip="Sell preview will appear here on hover.">Sell</button>
+
+      <div class="card alerts" style="margin-top:12px">
+        <div class="card-hdr">
+          <h3>Price Alerts</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-alerts')">▬</button></div>
+        </div>
+        <div id="body-alerts">
+          <div class="actions-row">
+            <input type="number" id="alert-price" placeholder="Price" step="0.01" data-tip="Price level that will trigger the alert." />
+            <select id="alert-dir" class="btn" data-tip="Direction of the trigger.">
+              <option value="above">Above</option>
+              <option value="below">Below</option>
+            </select>
+            <button class="btn gold" id="btn-add-alert" data-tip="Add a price alert.">Add</button>
+          </div>
+          <ul id="alert-list"></ul>
+        </div>
       </div>
-      <div style="margin-top:6px;font-size:11px;color:var(--muted)">Trades execute at the latest synthetic close. Stored locally in your browser.</div>
-      <button class="btn" id="reset-portfolio" style="margin-top:8px" data-tip="Wipe paper portfolio back to R100,000 cash, no positions.">Reset to R100,000</button>
-    </div>
 
-    <div class="card alerts" style="margin-top:12px">
-      <h3 style="margin-top:0">Price Alerts</h3>
-      <div class="actions-row">
-        <input type="number" id="alert-price" placeholder="Price" step="0.01" data-tip="Price level that will trigger the alert." />
-        <select id="alert-dir" class="btn" data-tip="Direction of the trigger - Above or Below the price you set.">
-          <option value="above">Above</option>
-          <option value="below">Below</option>
-        </select>
-        <button class="btn gold" id="btn-add-alert" data-tip="Add a price alert. The browser will pop up a notification when the price crosses your threshold (you may need to allow notifications first).">Add</button>
+    </div><!-- /rtab trade -->
+
+    <!-- ── AUTOPILOT tab ──────────────────────────────────────── -->
+    <div class="rtab-panel" data-tab="autopilot">
+
+      <div class="card">
+        <div class="card-hdr">
+          <h3>AI Autopilot</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-autopilot')">▬</button></div>
+        </div>
+        <div id="body-autopilot">
+          <div class="autopilot-status">
+            <div class="ap-led" id="ap-led"></div>
+            <div class="ap-text">
+              <div class="ap-state" id="ap-state">DISENGAGED</div>
+              <div class="ap-mode"  id="ap-mode">Mode: idle</div>
+            </div>
+            <div class="ap-speed">
+              Speed
+              <select id="ap-speed">
+                <option value="500">slow</option>
+                <option value="200" selected>normal</option>
+                <option value="50">fast</option>
+                <option value="0">instant</option>
+              </select>
+            </div>
+          </div>
+          <div class="ap-progress"><div id="ap-progress-bar"></div></div>
+          <div class="row" style="margin-bottom:6px">
+            <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;cursor:pointer"
+              data-tip="When ON, autopilot skips signals with &lt;50% historical win rate (min 5 fires). Skipped signals appear as SKIP in the log.">
+              <input type="checkbox" id="smart-filter" /> Smart Filter — skip signals with &lt;50% win rate
+            </label>
+          </div>
+          <div class="row">
+            <button class="btn gold" id="ap-engage"   data-tip="Start the rule-based autopilot.">Engage Autopilot</button>
+            <button class="btn"      id="pilot-reset" data-tip="Stop and reset the autopilot.">Reset &amp; Stop</button>
+          </div>
+          <div class="pilot-stats">
+            <div class="pilot-stat"><div class="k">Pilot value</div> <div class="v" id="pilot-value">R 100,000</div></div>
+            <div class="pilot-stat"><div class="k">Buy &amp; Hold</div><div class="v" id="pilot-bh">R 100,000</div></div>
+            <div class="pilot-stat"><div class="k">Pilot return</div><div class="v" id="pilot-return">0.0%</div></div>
+            <div class="pilot-stat"><div class="k">Drawdown</div>    <div class="v" id="pilot-dd">0.0%</div></div>
+          </div>
+          <h4>Decision Log</h4>
+          <ul class="decision-log" id="decision-log"></ul>
+          <details>
+            <summary>+ More: autopilot rules &amp; envelope</summary>
+            <p><b>Trade rules:</b> ENTER on Golden Cross + RSI&lt;65 (buy 25% cash). ADD on RSI bounce from oversold in uptrend (15%). TRIM half on RSI&gt;75. EXIT on Death Cross OR price 8% below MA200.</p>
+            <p><b>Envelope protection:</b> If drawdown exceeds 15% from peak, autopilot closes all positions and disengages.</p>
+            <p><b>Modes:</b> TREND | DEFENSIVE | GROUNDED. <b>Position cap:</b> 50% per ticker. <b>Cooldown:</b> 5 days.</p>
+          </details>
+        </div>
       </div>
-      <ul id="alert-list"></ul>
-    </div>
 
-    <!-- ============================================================ -->
-    <!-- Pillar 4 — Decision Journal                                   -->
-    <!-- ============================================================ -->
-    <div class="card" id="journal-card" style="margin-top:12px">
-      <div class="row" style="align-items:center;margin-bottom:4px">
-        <h3 style="margin:0">Decision Journal</h3>
-        <span class="grow"></span>
-        <button class="btn gold" id="btn-journal-review"
-          data-tip="Ask Claude to review your recent trade decisions and identify patterns in your reasoning. Requires AI proxy URL.">
-          AI Review
-        </button>
-        <button class="btn" id="btn-clear-journal" style="margin-left:6px"
-          data-tip="Clear all journal entries. This cannot be undone.">
-          Clear
-        </button>
+    </div><!-- /rtab autopilot -->
+
+    <!-- ── JOURNAL tab ── Decision Journal · Historical Edge ──── -->
+    <div class="rtab-panel" data-tab="journal">
+
+      <div class="card" id="journal-card">
+        <div class="card-hdr">
+          <h3>Decision Journal</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-journal')">▬</button></div>
+          <button class="btn gold" id="btn-journal-review" style="margin-left:8px"
+            data-tip="Ask Claude to review your recent trade decisions. Requires AI proxy URL.">AI Review</button>
+          <button class="btn" id="btn-clear-journal" style="margin-left:4px"
+            data-tip="Clear all journal entries.">Clear</button>
+        </div>
+        <div id="body-journal">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 8px">
+            Every trade you make — and the reason you gave — is recorded here.
+            The AI Review reads your last 14 days and looks for patterns.
+          </p>
+          <div id="journal-entries"></div>
+        </div>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 8px">
-        Every trade you make — and the reason you gave — is recorded here.
-        This is your learning record, not just a P/L log.
-        The AI Review reads your last 14 days and looks for patterns.
-      </p>
-      <div id="journal-entries"></div>
-    </div>
 
-    <!-- ============================================================ -->
-    <!-- Pillar 6 — Famous Crashes Case Study Library                  -->
-    <!-- ============================================================ -->
-    <div class="card" id="crashes-card" style="margin-top:12px">
-      <h3 style="margin:0 0 4px">Famous Crashes</h3>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
-        Re-live a market crash day-by-day with no hindsight.
-        Each scenario loads the full historical data and enters Replay Mode
-        at the onset of the event. Make decisions, use the AI coach, and
-        keep a journal — exactly as you would on a live chart.
-        Requires your Yahoo proxy URL to be configured.
-      </p>
-      <div id="crash-loading" style="display:none;font-size:12px;color:var(--gold);padding:4px 0 8px"></div>
-      <div id="crashes-list"></div>
-    </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-hdr">
+          <h3>Historical Edge</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'edge-body')">▬</button></div>
+        </div>
+        <div id="edge-body">
+          <div style="font-size:11px;color:var(--muted);margin:8px 0">How each signal has performed historically. Forward look: 30 trading days after the signal fires.</div>
+          <div id="edge-tables"></div>
+          <details>
+            <summary>+ More: how to read this</summary>
+            <p><b>Fires</b> = times the signal triggered. <b>Win%</b> = % of fires that were correct. <b>Avg</b> = average 30-day return after signal.</p>
+            <p><b>Green Win% (≥60%)</b> = edge exists. <b>Red (&lt;40%)</b> = signal has historically failed. Low Fires (&lt;5) = not enough data to trust.</p>
+          </details>
+        </div>
+      </div>
 
-    <!-- ============================================================ -->
-    <!-- Pillar 7 — Curriculum Modules                                 -->
-    <!-- ============================================================ -->
-    <div class="card" id="curriculum-card" style="margin-top:12px">
-      <h3 style="margin:0 0 4px">Curriculum</h3>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">
-        Six structured lessons using the live lab as the classroom.
-        Each lesson teaches one concept in plain English, then puts you
-        directly in the chart to apply it. No videos. No paywalls. No gurus.
-      </p>
-      <div id="curriculum-progress"></div>
-      <div id="curriculum-list" style="margin-top:10px"></div>
-    </div>
+    </div><!-- /rtab journal -->
 
-  </div>
+    <!-- ── LEARN tab ── Famous Crashes · Curriculum ────────────── -->
+    <div class="rtab-panel" data-tab="learn">
+
+      <div class="card" id="crashes-card">
+        <div class="card-hdr">
+          <h3>Famous Crashes</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-crashes')">▬</button></div>
+        </div>
+        <div id="body-crashes">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+            Re-live a market crash day-by-day with no hindsight. Each scenario loads full historical data
+            and enters Replay Mode at the crash onset. Requires Yahoo proxy URL.
+          </p>
+          <div id="crash-loading" style="display:none;font-size:12px;color:var(--gold);padding:4px 0 8px"></div>
+          <div id="crashes-list"></div>
+        </div>
+      </div>
+
+      <div class="card" id="curriculum-card" style="margin-top:12px">
+        <div class="card-hdr">
+          <h3>Curriculum</h3>
+          <div class="wm-btns"><button class="wm-btn" title="Minimize" onclick="wm(this,'body-curriculum')">▬</button></div>
+        </div>
+        <div id="body-curriculum">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">
+            Six structured lessons using the live lab as the classroom. No videos. No paywalls. No gurus.
+          </p>
+          <div id="curriculum-progress"></div>
+          <div id="curriculum-list" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+    </div><!-- /rtab learn -->
+
+  </div><!-- /right panel -->
 
 </div>
 
@@ -552,6 +614,26 @@
   </div>
 </div>
 
+<!-- Window-management + tab helpers -->
+<script>
+/* Minimize / restore a card body */
+function wm(btn, bodyId) {
+  var body = document.getElementById(bodyId);
+  var isMin = body.style.display === 'none';
+  body.style.display = isMin ? '' : 'none';
+  btn.textContent    = isMin ? '▬' : '□';
+  btn.title          = isMin ? 'Minimize' : 'Restore';
+}
+/* Switch right-panel tab */
+function rtab(name) {
+  document.querySelectorAll('.rtab-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab === name);
+  });
+  document.querySelectorAll('.rtab-panel').forEach(function(p){
+    p.classList.toggle('active', p.dataset.tab === name);
+  });
+}
+</script>
 <script type="module" src="./js/main.js"></script>
 <!--
   All JavaScript now lives in separate ES module files under js/.

@@ -112,9 +112,16 @@ export function renderHistoricalEdge() {
   if (!container) return;
 
   let html = '';
+  let anyFires = false;
+
   for (const t of TICKERS) {
     const e = state.historicalEdge[t.sym];
     if (!e) continue;
+
+    // Skip tickers with no signal fires at all — they add noise without information
+    const totalFires = ['ENTER','ADD','TRIM','EXIT'].reduce((s, a) => s + e[a].fired, 0);
+    if (totalFires === 0) continue;
+    anyFires = true;
 
     html += '<div style="margin-bottom:10px">';
     html += '<div style="color:var(--gold);font-weight:600;font-size:12px;margin-bottom:4px">' + t.sym + '</div>';
@@ -151,6 +158,13 @@ export function renderHistoricalEdge() {
     }
 
     html += '</tbody></table></div>';
+  }
+
+  if (!anyFires) {
+    html = '<div style="font-size:11px;color:var(--muted);padding:4px 0">' +
+           'No signal history yet — configure your Yahoo proxy and click ' +
+           '<b style="color:var(--gold)">Refresh prices</b> to populate these tables with real data.' +
+           '</div>';
   }
 
   container.innerHTML = html;

@@ -12,6 +12,7 @@
 
 import { state, saveSR }              from './state.js';
 import { detectPatterns, detectActions } from './patterns.js';
+import { MARKET_EVENTS, EVENT_COLOURS }  from './events.js';
 
 // Injected render callback — set by initChart(), never null after boot
 let _render = null;
@@ -82,6 +83,10 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
 
   const padL = 50, padR = 12, padT = 14, padB = 22;
   const w = W - padL - padR, h = H - padT - padB;
+
+  // Precompute event date map (date → event) once per draw
+  const _evMap = {};
+  for (const ev of MARKET_EVENTS) _evMap[ev.date] = ev;
 
   // Price range: include all drawn data + SR lines
   let lo = Infinity, hi = -Infinity;
@@ -302,6 +307,52 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
     }
   }
 
+  // ── Market event flags ──────────────────────────────────────────────
+  // Small colored flag pins at the top of the chart for each MARKET_EVENTS date
+  // that falls within the visible window. Flag color = event category.
+  // Dashed guide line extends from flag base to just above the candle high.
+  if (state.indicators.events) {
+    ctx.save();
+    const FY = padT + 1;  // flag sits at very top of chart area
+
+    for (let i = 0; i < candles.length; i++) {
+      const ev = _evMap[candles[i].d];
+      if (!ev) continue;
+      const x   = padL + i * cw + cw / 2;
+      const col = EVENT_COLOURS[ev.category] || '#888';
+      const yH  = padT + h * (1 - (candles[i].h - lo) / (hi - lo));
+
+      // Dashed guide from flag base to just above candle high
+      ctx.strokeStyle = col;
+      ctx.lineWidth   = 1;
+      ctx.globalAlpha = 0.35;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x, FY + 9);
+      ctx.lineTo(x, Math.max(yH - 3, FY + 10));
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Flag pole stub
+      ctx.strokeStyle = col;
+      ctx.lineWidth   = 1.5;
+      ctx.globalAlpha = 0.90;
+      ctx.beginPath();
+      ctx.moveTo(x, FY);
+      ctx.lineTo(x, FY + 8);
+      ctx.stroke();
+
+      // Flag body (flies to the right of the pole)
+      ctx.fillStyle   = col;
+      ctx.globalAlpha = 0.88;
+      ctx.fillRect(x, FY, 7, 5);
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+  // ── end event flags ───────────────────────────────────────────────
+
   // X-axis date labels — format adapts to visible timeframe
   ctx.fillStyle = '#8a94a8'; ctx.font = '10px Inter,Arial'; ctx.textAlign = 'center';
   const _MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -323,7 +374,8 @@ export function drawCandles(candles, ma50, ma200, bbUp, bbDn, rsiArr) {
   ctx.textAlign = 'start';
 
   // Save geometry for crosshair + SR click
-  chartGeom = { padL, padT, padR, padB, w, h, lo, hi, cw, candles, W, H, ma50, ma200, rsiArr };
+  chartGeom = { padL, padT, padR, padB, w, h, lo, hi, cw, candles, W, H, ma50, ma200, rsiArr,
+                evMap: state.indicators.events ? _evMap : null };
 
   // Set grab cursor — shows the user the chart is draggable
   cv.style.cursor = 'grab';
@@ -516,6 +568,72 @@ function showCrosshair(x, y) {
       '<span>RSI <b style="color:' + rsiColor + '">' + rsiv + '</b></span>' +
     '</div>';
   box.style.display = 'block';
+
+  // ── Event tooltip (bottom-left) ─────────────────────────────────
+  // If the hovered candle has a MARKET_EVENTS entry, render a detail box
+  // in the bottom-left corner of the price chart area.
+  if (g.evMap) {
+    const hov = g.candles[_hoverIdx];
+    const ev  = hov && g.evMap[hov.d];
+    if (ev) {
+      const col    = EVENT_COLOURS[ev.category] || '#888';
+      ctx.save();
+
+      // Word-wrap the detail string to fit inside the box
+      const BOX_W  = Math.min(310, g.w - 8);
+      const INNER  = BOX_W - 14;
+      const LINE_H = 13;
+      ctx.font = '10px Inter,Arial';
+
+      const words  = ev.detail.split(' ');
+      const dlines = [];
+      let   dline  = '';
+      for (const word of words) {
+        const test = dline ? dline + ' ' + word : word;
+        if (ctx.measureText(test).width > INNER && dline) {
+          dlines.push(dline); dline = word;
+        } else { dline = test; }
+      }
+      if (dline) dlines.push(dline);
+
+      // Cap at 3 lines; add ellipsis if truncated
+      const MAX_LINES = 3;
+      const shown     = dlines.slice(0, MAX_LINES);
+      if (dlines.length > MAX_LINES) shown[MAX_LINES - 1] += ' …';
+
+      const BOX_H = 14 + shown.length * LINE_H + 6;
+      const BX    = g.padL + 4;
+      const BY    = g.padT + g.h - BOX_H - 6;
+
+      // Background
+      ctx.fillStyle   = 'rgba(8,14,26,0.93)';
+      ctx.strokeStyle = col;
+      ctx.lineWidth   = 1;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(BX, BY, BOX_W, BOX_H, 4)
+                    : ctx.rect(BX, BY, BOX_W, BOX_H);
+      ctx.fill();
+      ctx.stroke();
+
+      // Category dot + event label
+      ctx.fillStyle    = col;
+      ctx.fillRect(BX + 6, BY + 4, 6, 6);
+      ctx.fillStyle    = '#e9edf5';
+      ctx.textBaseline = 'top';
+      ctx.font         = 'bold 11px Inter,Arial';
+      ctx.fillText(ev.label, BX + 16, BY + 3);
+
+      // Detail lines
+      ctx.font      = '10px Inter,Arial';
+      ctx.fillStyle = '#8a94a8';
+      for (let li = 0; li < shown.length; li++) {
+        ctx.fillText(shown[li], BX + 6, BY + 14 + li * LINE_H);
+      }
+
+      ctx.restore();
+    }
+  }
+  // ── end event tooltip ──────────────────────────────────────────
 }
 
 // ------------------------------------------------------------------

@@ -522,18 +522,21 @@ async function jumpToCrash(scenario) {
     buildTabs();
   }
 
-  // Pick a timeframe that fits the full crash period on screen.
-  // Calendar days / 1.4 ≈ trading days; round up to the next available button.
-  const calDays = scenario.endDate
-    ? Math.round((new Date(scenario.endDate) - new Date(scenario.startDate)) / 86400000)
-    : 90;
-  const newTf = calDays > 400 ? 730        // 2Y covers very long crashes (Dot-com)
-              : calDays > 200 ? 365        // 1Y covers medium crashes (GFC, META)
-              : calDays >  90 ? 180        // 180D covers USDZAR (~8 months)
-              :                  90;       // 90D covers short crashes (COVID, Yen Carry)
+  // Calculate a timeframe that fits the FULL story on screen:
+  // crash onset → last available data candle (so recovery is always visible).
+  const latestDate    = candles.length > 0 ? candles[candles.length - 1].d : scenario.endDate;
+  const calDaysTotal  = latestDate
+    ? Math.round((new Date(latestDate) - new Date(scenario.startDate)) / 86400000)
+    : 730;
+  // Trading days ≈ calDays × 5/7, add 15% padding so onset isn't right at the edge
+  const newTf = Math.max(365, Math.min(1500, Math.round(calDaysTotal * 5 / 7 * 1.15)));
+
   state.timeframe = newTf;
+  // Highlight the closest standard TF button as a reference point
+  const TF_STEPS = [30, 90, 180, 365, 730];
+  const closestTf = TF_STEPS.reduce((a, b) => Math.abs(b - newTf) < Math.abs(a - newTf) ? b : a);
   document.querySelectorAll('#tf button').forEach(b => {
-    b.classList.toggle('on', +b.dataset.tf === newTf);
+    b.classList.toggle('on', +b.dataset.tf === closestTf);
   });
 
   // Reset pan so the crash opens at the right position
@@ -553,18 +556,10 @@ async function jumpToCrash(scenario) {
     render();
   };
 
-  // Position replay 6 months past the trough so the bottom marker AND the early
-  // recovery zone are both visible. Cap at fetchEnd to avoid requesting future data.
-  let replayTarget;
-  if (scenario.endDate) {
-    const d = new Date(scenario.endDate);
-    d.setDate(d.getDate() + 180);                          // 6 months past trough
-    const shifted = d.toISOString().slice(0, 10);
-    const cap     = scenario.fetchEnd || '2030-01-01';
-    replayTarget  = shifted <= cap ? shifted : scenario.endDate;
-  } else {
-    replayTarget = scenario.startDate;
-  }
+  // Position replay at the LAST available data point so the full story
+  // (crash onset → trough → full recovery) is always accessible.
+  // The dynamic timeframe calculated above fits the entire window on screen.
+  const replayTarget = latestDate || scenario.startDate;
   jumpToAnalog(scenario.ticker, replayTarget);
 
   // Scroll to the top so the user sees the chart + context panel + replay controls.

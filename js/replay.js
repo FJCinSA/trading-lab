@@ -222,8 +222,22 @@ export function updateReplayUI() {
     backBtn.disabled  = (idx <= 50);
     fwdBtn.disabled   = (idx >= lastIdx);
     liveBtn.disabled  = false;
-    display.textContent = dateStr;
-    display.style.color = 'var(--gold)';
+
+    // If a crash study is active, pin the onset + bottom dates next to the current date
+    if (state.crashStudy) {
+      const cs = state.crashStudy;
+      display.style.color = '';   // clear inline color so child spans control colour
+      display.innerHTML =
+        '<span style="color:var(--gold);font-variant-numeric:tabular-nums;font-weight:700">' + dateStr + '</span>' +
+        '&ensp;<span style="font-size:11px;color:var(--red);font-weight:600">▼ onset&nbsp;' + cs.startDate + '</span>' +
+        (cs.endDate
+          ? '&ensp;<span style="font-size:11px;color:var(--green);font-weight:600">▲ bottom&nbsp;' + cs.endDate + '</span>'
+          : '');
+    } else {
+      display.textContent = dateStr;
+      display.style.color = 'var(--gold)';
+    }
+
     if (pill) { pill.textContent = 'REPLAY ' + dateStr; pill.style.color = 'var(--gold)'; }
   } else {
     startBtn.disabled = false;
